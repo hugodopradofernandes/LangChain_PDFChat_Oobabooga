@@ -1,2 +1,2 @@
 #!/bin/bash
-streamlit run app.py
+streamlit run HomePage.py --server.port 9092
