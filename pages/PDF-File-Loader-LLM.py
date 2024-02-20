@@ -66,7 +66,7 @@ def fetching_pdf(pdf):
 
     # Split the text into chunks
     text_splitter = CharacterTextSplitter(
-        separator="\n", chunk_size=850, chunk_overlap=180, length_function=len
+        separator="\n", chunk_size=1000, chunk_overlap=200, length_function=len
     )
     chunks = text_splitter.split_text(text)
     #embeddings = SentenceTransformerEmbeddings(model_name='hku-nlp/instructor-large')

@@ -10,10 +10,13 @@ from langchain.callbacks.manager import CallbackManager
 from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 from langchain.llms.base import LLM
 from typing import Optional, List, Mapping, Any
-from langchain.tools import WikipediaQueryRun
-from langchain.utilities import WikipediaAPIWrapper
+from youtube_transcript_api import YouTubeTranscriptApi
+from youtube_transcript_api.formatters import Formatter
+from youtube_transcript_api.formatters import TextFormatter
 from io import StringIO
 
+import faulthandler
+faulthandler.enable()
 #-------------------------------------------------------------------
 class webuiLLM(LLM):
     @property
@@ -56,11 +59,16 @@ class webuiLLM(LLM):
 #-------------------------------------------------------------------
 langchain.verbose = False
 #-------------------------------------------------------------------
-@st.cache_data(hash_funcs={StringIO: StringIO.getvalue},show_spinner="Fetching data from Wikipedia...")
-def fetching_article(wikipediatopic):
-    wikipage = WikipediaQueryRun(api_wrapper=WikipediaAPIWrapper())
-    text = wikipage.run(wikipediatopic)
+def fetching_transcript(youtubeid):
+    
+    # retrieve the available transcripts
+    #transcript_list = YouTubeTranscriptApi.list_transcripts(youtubeid)
 
+    transcript = YouTubeTranscriptApi.get_transcript(youtubeid, languages=['pt', 'en'])
+    
+    formatter = TextFormatter()
+    text = formatter.format_transcript(transcript)
+    
     # Split the text into chunks
     text_splitter = CharacterTextSplitter(
         separator="\n", chunk_size=1000, chunk_overlap=200, length_function=len
@@ -77,31 +85,8 @@ def fetching_article(wikipediatopic):
         collection_name="doc_chunks",
     )
     return knowledge_base
+
 #-------------------------------------------------------------------
-@st.cache_data(hash_funcs={StringIO: StringIO.getvalue},show_spinner="Fetching data from URL...")
-def fetching_url(userinputquery):
-
-    page = requests.get(userinputquery)
-    text = (page.text)
-
-    # Split the text into chunks
-    text_splitter = CharacterTextSplitter(
-        separator="\n", chunk_size=1000, chunk_overlap=200, length_function=len
-    )
-    chunks = text_splitter.split_text(text)
-    #embeddings = SentenceTransformerEmbeddings(model_name='hku-nlp/instructor-large')
-    embeddings = SentenceTransformerEmbeddings(model_name="flax-sentence-embeddings/all_datasets_v4_MiniLM-L6")
-
-    # Create in-memory Qdrant instance
-    knowledge_base = Qdrant.from_texts(
-        chunks,
-        embeddings,
-        location=":memory:",
-        collection_name="doc_chunks",
-    )
-    return knowledge_base
-#-------------------------------------------------------------------
-@st.cache_data(hash_funcs={StringIO: StringIO.getvalue},show_spinner="Prompting LLM...")
 def prompting_llm(user_question,_knowledge_base,_chain):
     docs = _knowledge_base.similarity_search(user_question, k=4)
     # Calculating prompt (takes time and can optionally be removed)
@@ -133,20 +118,15 @@ def main():
         )
 #-------------------------------------------------------------------
     # Wikipedia page setup
-    st.set_page_config(page_title="Ask Wikipedia or URL")
-    st.header("Ask Wikipedia or URL: 📚")
-    userinputquery = st.text_input('Add the desired Wikipedia topic here, or a URL')
+    st.set_page_config(page_title="Ask Youtube Video")
+    st.header("Ask Youtube Video: 📺")
+    youtubeid = st.text_input('Add the desired Youtube video ID here. ID only')
 
-    if userinputquery:
-        if userinputquery.startswith("http"):
-            knowledge_base = fetching_url(userinputquery)
-        else:
-            knowledge_base = fetching_article(userinputquery)
-       
-        user_question = st.text_input("Ask a question about the loaded content:")
-
+    if youtubeid:
+        knowledge_base = fetching_transcript(youtubeid)
+        user_question = st.text_input("Ask a question about the Youtube video:")
         if user_question:
-            response = prompting_llm(user_question,knowledge_base,chain)
+            response = prompting_llm("This is a video transcript, " + user_question,knowledge_base,chain)
             st.write(response)
 #-------------------------------------------------------------------
 
