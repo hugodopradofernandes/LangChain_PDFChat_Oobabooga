@@ -76,14 +76,6 @@ def main():
     pdf = st.file_uploader("Upload a PDF", type=["pdf"], accept_multiple_files=True)
 
     if pdf:
-#-----------------old------------------------
-#        pdf_reader = PdfReader(pdf)
-#
-#        # Collect text from pdf
-#        text = ""
-#        for page in pdf_reader.pages:
-#            text += page.extract_text()
-#-----------------new------------------------
         for f in pdf:
             pdf_reader = PdfReader(f)
             text = ''
@@ -93,7 +85,7 @@ def main():
 
         # Split the text into chunks
         text_splitter = CharacterTextSplitter(
-            separator="\n", chunk_size=1000, chunk_overlap=200, length_function=len
+            separator="\n", chunk_size=850, chunk_overlap=180, length_function=len
         )
         chunks = text_splitter.split_text(text)
 
