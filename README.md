@@ -1,47 +1,31 @@
 # LangChain_PDFChat_Oobabooga
 
-PDF CHAT BOT with a local llm 
+PDF CHAT BOT with a local llm # A fork from https://github.com/sebaxzero/LangChain_PDFChat_Oobabooga
 
 this it just a test using [wafflecomposite/langchain-ask-pdf-local](https://github.com/wafflecomposite/langchain-ask-pdf-local) but with [oobabooga/text-generation-webui](https://github.com/oobabooga/text-generation-webui) api, all run locally
 
-# after some testing
+I added multiple PDF files at once, updated Oobabooga api and raised some limits
 
-manage to get better result using a smaller text chunk (main.py line 47) 
-```
-# Split the text into chunks
-        text_splitter = CharacterTextSplitter(
-            separator="\n", chunk_size=500, chunk_overlap=250, length_function=len
-        )
-```
-if answer are incomplete then edit max new token to a bigger value (class.py line 17) and ask again
-```
-'max_new_tokens': 500,
-```
+![screenshot](https://github.com/hugodopradofernandes/LangChain_PDFChat_Oobabooga/blob/main/screenshots/Screenshot_20240220_023931.png)
+![screenshot](https://github.com/hugodopradofernandes/LangChain_PDFChat_Oobabooga/blob/main/screenshots/Screenshot_20240220_030534.png)
+# To install
 
-# to install
+1. clone repository
+2. create a conda environment
+3. install the requirements
 
-uses miniconda env installer from oobabooga, no need to install conda
-
-1. clone repository ( dont use path with space ; ie: "C:\Users\Admin\IA Apps" instead use something like "C:\Users\Admin\IA_Apps" )
-2. open start_windows.bat
-3. open install_requirements.bat
-
-# to run 
+# To run 
 
 1. start your oobabooga-api
+2. Run start_linux.sh (or run streamlit run app.py)
 
-you can use cmd_windowds.bat located in oobabooga folder (only --api matters, edit class.py if using not default port for api)
-```
-cd text-generation-webui
-python server.py --auto-devices --model-menu --api
-```
-2. open start_windows.bat
+# Embeddings model
 
-# embeddings
-
-using [flax-sentence-embeddings/all_datasets_v4_MiniLM-L6](https://huggingface.co/flax-sentence-embeddings/all_datasets_v4_MiniLM-L6), will download on first run (only one that worked, idk much about it)
+using [flax-sentence-embeddings/all_datasets_v4_MiniLM-L6](https://huggingface.co/flax-sentence-embeddings/all_datasets_v4_MiniLM-L6), will download on first run to the huggingface cache.
 
 # Credits
+
+A fork from https://github.com/sebaxzero/LangChain_PDFChat_Oobabooga
 
 100% not my code, i just copy - paste
 
