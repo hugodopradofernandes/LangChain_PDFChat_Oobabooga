@@ -73,7 +73,7 @@ def main():
     # PDF page setup
     st.set_page_config(page_title="Ask your PDF")
     st.header("Ask your PDF 💬")
-    pdf = st.file_uploader("Upload a PDF", type=["pdf"], accept_multiple_files=True)
+    pdf = st.file_uploader("Upload PDF file(s)", type=["pdf"], accept_multiple_files=True)
     
     if pdf:
         text = ''
