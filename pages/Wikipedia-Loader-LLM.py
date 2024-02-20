@@ -12,6 +12,7 @@ from langchain.llms.base import LLM
 from typing import Optional, List, Mapping, Any
 from langchain.tools import WikipediaQueryRun
 from langchain.utilities import WikipediaAPIWrapper
+from io import StringIO
 
 #-------------------------------------------------------------------
 class webuiLLM(LLM):
@@ -55,6 +56,43 @@ class webuiLLM(LLM):
 #-------------------------------------------------------------------
 langchain.verbose = False
 #-------------------------------------------------------------------
+@st.cache_data(hash_funcs={StringIO: StringIO.getvalue},show_spinner="Fetching data from Wikipedia...")
+def fetching_article(wikipediatopic):
+    wikipage = WikipediaQueryRun(api_wrapper=WikipediaAPIWrapper())
+    text = wikipage.run(wikipediatopic)
+
+    # Split the text into chunks
+    text_splitter = CharacterTextSplitter(
+        separator="\n", chunk_size=850, chunk_overlap=180, length_function=len
+    )
+    chunks = text_splitter.split_text(text)
+    #embeddings = SentenceTransformerEmbeddings(model_name='hku-nlp/instructor-large')
+    embeddings = SentenceTransformerEmbeddings(model_name="flax-sentence-embeddings/all_datasets_v4_MiniLM-L6")
+
+    # Create in-memory Qdrant instance
+    knowledge_base = Qdrant.from_texts(
+        chunks,
+        embeddings,
+        location=":memory:",
+        collection_name="doc_chunks",
+    )
+    return knowledge_base
+#-------------------------------------------------------------------
+@st.cache_data(hash_funcs={StringIO: StringIO.getvalue},show_spinner="Prompting LLM...")
+def prompting_llm(user_question,_knowledge_base,_chain):
+    docs = _knowledge_base.similarity_search(user_question, k=4)
+    # Calculating prompt (takes time and can optionally be removed)
+    prompt_len = _chain.prompt_length(docs=docs, question=user_question)
+    st.write(f"Prompt len: {prompt_len}")
+    # if prompt_len > llm.n_ctx:
+    #     st.write(
+    #         "Prompt length is more than n_ctx. This will likely fail. Increase model's context, reduce chunk's \
+    #             sizes or question length, or retrieve less number of docs."
+    #     )
+    # Grab and print response
+    response = _chain.run(input_documents=docs, question=user_question)
+    return response
+#-------------------------------------------------------------------
 def main():
     # Callback just to stream output to stdout, can be removed
     callback_manager = CallbackManager([StreamingStdOutCallbackHandler()])
@@ -77,39 +115,11 @@ def main():
     wikipediatopic = st.text_input('Add the desired Wikipedia topic here')
 
     if wikipediatopic:
-        wikipage = WikipediaQueryRun(api_wrapper=WikipediaAPIWrapper())
-        text = wikipage.run(wikipediatopic)
+        knowledge_base = fetching_article(wikipediatopic)
+        user_question = st.text_input("Ask a question about the loaded Wikipedia topic:")
 
-        # Split the text into chunks
-        text_splitter = CharacterTextSplitter(
-            separator="\n", chunk_size=850, chunk_overlap=180, length_function=len
-        )
-        chunks = text_splitter.split_text(text)
-        #embeddings = SentenceTransformerEmbeddings(model_name='hku-nlp/instructor-large')
-        embeddings = SentenceTransformerEmbeddings(model_name="flax-sentence-embeddings/all_datasets_v4_MiniLM-L6")
-
-        # Create in-memory Qdrant instance
-        knowledge_base = Qdrant.from_texts(
-            chunks,
-            embeddings,
-            location=":memory:",
-            collection_name="doc_chunks",
-        )
-
-        wiki_question = st.text_input("Ask a question about the loaded Wikipedia topic:")
-
-        if wiki_question:
-            docs = knowledge_base.similarity_search(wiki_question, k=4)
-            # Calculating prompt (takes time and can optionally be removed)
-            prompt_len = chain.prompt_length(docs=docs, question=wiki_question)
-            st.write(f"Prompt len: {prompt_len}")
-            # if prompt_len > llm.n_ctx:
-            #     st.write(
-            #         "Prompt length is more than n_ctx. This will likely fail. Increase model's context, reduce chunk's \
-            #             sizes or question length, or retrieve less number of docs."
-            #     )
-            # Grab and print response
-            response = chain.run(input_documents=docs, question=wiki_question)
+        if user_question:
+            response = prompting_llm(user_question,knowledge_base,chain)
             st.write(response)
 #-------------------------------------------------------------------
 
