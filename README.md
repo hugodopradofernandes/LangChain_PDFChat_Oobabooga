@@ -6,8 +6,8 @@ this it just a test using [wafflecomposite/langchain-ask-pdf-local](https://gith
 
 I added multiple PDF files at once, updated Oobabooga api and raised some limits
 
-![screenshot](https://github.com/hugodopradofernandes/LangChain_PDFChat_Oobabooga/blob/main/screenshots/Screenshot_20240220_023931.png)
-![screenshot](https://github.com/hugodopradofernandes/LangChain_PDFChat_Oobabooga/blob/main/screenshots/Screenshot_20240220_030534.png)
+![screenshot](https://github.com/hugodopradofernandes/LangChain_PDFChat_Oobabooga/blob/main/screenshots/Screenshot_20240220_071721.png)
+![screenshot](https://github.com/hugodopradofernandes/LangChain_PDFChat_Oobabooga/blob/main/screenshots/Screenshot_20240220_071827.png)
 # To install
 
 1. clone repository
