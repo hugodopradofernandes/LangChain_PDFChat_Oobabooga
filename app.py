@@ -1,8 +1,5 @@
-from Class import webuiLLM
-
 import streamlit as st
 from PyPDF2 import PdfReader
-
 import langchain
 from langchain.text_splitter import CharacterTextSplitter
 from langchain.chains.question_answering import load_qa_chain
@@ -11,7 +8,49 @@ from langchain.vectorstores import Qdrant
 from langchain.embeddings import SentenceTransformerEmbeddings
 from langchain.callbacks.manager import CallbackManager
 from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
+#for webui class
+from langchain.llms.base import LLM
+from typing import Optional, List, Mapping, Any
+import requests
 
+class webuiLLM(LLM):
+    @property
+    def _llm_type(self) -> str:
+        return "custom"
+
+    def _call(self, prompt: str, stop: Optional[List[str]] = None) -> str:
+        response = requests.post(
+            "http://127.0.0.1:5000/v1/completions",
+            json={
+                "prompt": prompt,
+                "max_tokens": 2048,
+                "do_sample": "false",
+                "temperature": 0.7,
+                "top_p": 0.1,
+                "typical_p": 1,
+                "repetition_penalty": 1.18,
+                "top_k": 40,
+                "min_length": 0,
+                "no_repeat_ngram_size": 0,
+                "num_beams": 1,
+                "penalty_alpha": 0,
+                "seed": -1,
+                "add_bos_token": "true",
+                "ban_eos_token": "false",
+                "skip_special_tokens": "false",
+            }
+        )
+
+        response.raise_for_status()
+
+        return response.json()["choices"][0]["text"].strip().replace("```", " ")
+     
+    @property
+    def _identifying_params(self) -> Mapping[str, Any]:
+        """Get the identifying parameters."""
+        return {
+
+        }
 langchain.verbose = False
 
 
@@ -34,15 +73,23 @@ def main():
     # Page setup
     st.set_page_config(page_title="Ask your PDF")
     st.header("Ask your PDF 💬")
-    pdf = st.file_uploader("Upload a PDF", type=["pdf"])
+    pdf = st.file_uploader("Upload a PDF", type=["pdf"], accept_multiple_files=True)
 
     if pdf:
-        pdf_reader = PdfReader(pdf)
-
-        # Collect text from pdf
-        text = ""
-        for page in pdf_reader.pages:
-            text += page.extract_text()
+#-----------------old------------------------
+#        pdf_reader = PdfReader(pdf)
+#
+#        # Collect text from pdf
+#        text = ""
+#        for page in pdf_reader.pages:
+#            text += page.extract_text()
+#-----------------new------------------------
+        for f in pdf:
+            pdf_reader = PdfReader(f)
+            text = ''
+            # Iterate through each page in the PDF document to extract the text and add to plain-text string
+            for page in pdf_reader.pages:
+              text += page.extract_text()
 
         # Split the text into chunks
         text_splitter = CharacterTextSplitter(
@@ -81,4 +128,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    main() 
