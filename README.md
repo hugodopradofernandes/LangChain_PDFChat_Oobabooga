@@ -2,9 +2,9 @@
 
 PDF CHAT BOT with a local llm # A fork from https://github.com/sebaxzero/LangChain_PDFChat_Oobabooga
 
-this it just a test using [wafflecomposite/langchain-ask-pdf-local](https://github.com/wafflecomposite/langchain-ask-pdf-local) but with [oobabooga/text-generation-webui](https://github.com/oobabooga/text-generation-webui) api, all run locally
+This it just a test using [wafflecomposite/langchain-ask-pdf-local](https://github.com/wafflecomposite/langchain-ask-pdf-local) but with [oobabooga/text-generation-webui](https://github.com/oobabooga/text-generation-webui) api, all run locally
 
-I added multiple PDF files at once, updated Oobabooga api and raised some limits
+I added multiple PDF files at once, updated Oobabooga api and raised some limits, also added a Wikipedia query page.
 
 ![screenshot](https://github.com/hugodopradofernandes/LangChain_PDFChat_Oobabooga/blob/main/screenshots/Screenshot_20240220_071721.png)
 ![screenshot](https://github.com/hugodopradofernandes/LangChain_PDFChat_Oobabooga/blob/main/screenshots/Screenshot_20240220_071827.png)
