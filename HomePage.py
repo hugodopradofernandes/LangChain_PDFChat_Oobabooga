@@ -67,7 +67,7 @@ llm = webuiLLM()
 chain = ConversationChain(llm=llm, memory=ConversationSummaryMemory(llm=llm,max_token_limit=500), verbose=False)
 
 #-------------------------------------------------------------------
-@st.cache_data(hash_funcs={StringIO: StringIO.getvalue},show_spinner="Prompting LLM...")
+@st.cache_data(show_spinner="Prompting LLM...")
 def prompting_llm(prompt,_chain):
     response = _chain.invoke(prompt).get("response")
     return response
