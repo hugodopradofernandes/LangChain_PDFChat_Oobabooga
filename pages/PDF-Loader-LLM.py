@@ -91,7 +91,7 @@ def prompting_llm(user_question,_knowledge_base,_chain):
     #             sizes or question length, or retrieve less number of docs."
     #     )
     # Grab and print response
-    response = _chain({"input_documents": docs, "question": user_question},return_only_outputs=True).get("output_text")
+    response = _chain.invoke({"input_documents": docs, "question": user_question},return_only_outputs=True).get("output_text")
     return response
 #-------------------------------------------------------------------
 def main():
