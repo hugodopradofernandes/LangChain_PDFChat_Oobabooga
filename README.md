@@ -1,6 +1,7 @@
-# LangChain_PDFChat_Oobabooga
+# LangChain_Wrapper_LocalLLM
 
-PDF CHAT BOT with a local llm # A fork from https://github.com/sebaxzero/LangChain_PDFChat_Oobabooga
+Wrapper to chat with a local llm, sending custom content: Webpages, PDFs, Youtube video transcripts.
+_Its a fork from https://github.com/sebaxzero/LangChain_PDFChat_Oobabooga_
 
 Oobabooga install is not covered here!!!
 
