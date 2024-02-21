@@ -13,6 +13,7 @@ from youtube_transcript_api import YouTubeTranscriptApi
 from youtube_transcript_api.formatters import Formatter
 from youtube_transcript_api.formatters import TextFormatter
 from io import StringIO
+import re
 
 #-------------------------------------------------------------------
 class webuiLLM(LLM):
@@ -58,6 +59,9 @@ langchain.verbose = False
 #-------------------------------------------------------------------
 def fetching_transcript(youtubeid):
     
+    if "youtube" in youtubeid:
+        data = re.findall(r"(?:v=|\/)([0-9A-Za-z_-]{11}).*", youtubeid)
+        youtubeid = data[0]
     # retrieve the available transcripts
     #transcript_list = YouTubeTranscriptApi.list_transcripts(youtubeid)
 
@@ -65,7 +69,7 @@ def fetching_transcript(youtubeid):
     
     formatter = TextFormatter()
     text = formatter.format_transcript(transcript)
-    
+
     # Split the text into chunks
     text_splitter = CharacterTextSplitter(
         separator="\n", chunk_size=1000, chunk_overlap=200, length_function=len
@@ -98,6 +102,12 @@ def prompting_llm(user_question,_knowledge_base,_chain):
     response = _chain.invoke({"input_documents": docs, "question": user_question},return_only_outputs=True).get("output_text")
     return response
 #-------------------------------------------------------------------
+def parseYoutubeURL(url:str):
+   data = re.findall(r"(?:v=|\/)([0-9A-Za-z_-]{11}).*", url)
+   if data:
+       return data[0]
+   return ""
+#-------------------------------------------------------------------
 def main():
     # Callback just to stream output to stdout, can be removed
     callback_manager = CallbackManager([StreamingStdOutCallbackHandler()])
@@ -117,7 +127,7 @@ def main():
     # Wikipedia page setup
     st.set_page_config(page_title="Ask Youtube Video")
     st.header("Ask Youtube Video: 📺")
-    youtubeid = st.text_input('Add the desired Youtube video ID here. ID only')
+    youtubeid = st.text_input('Add the desired Youtube video ID or URL here.')
 
     if youtubeid:
         knowledge_base = fetching_transcript(youtubeid)
