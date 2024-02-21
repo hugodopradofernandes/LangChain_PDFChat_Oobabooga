@@ -1,17 +1,16 @@
 import streamlit as st
 import requests
 import langchain
+from langchain.llms.base import LLM
 from langchain.text_splitter import CharacterTextSplitter
 from langchain.chains.question_answering import load_qa_chain
-from langchain.llms import LlamaCpp
-from langchain.vectorstores import Qdrant
-from langchain.embeddings import SentenceTransformerEmbeddings
+from langchain_community.vectorstores import Qdrant
+from langchain_community.embeddings import HuggingFaceEmbeddings as SentenceTransformerEmbeddings
 from langchain.callbacks.manager import CallbackManager
 from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
-from langchain.llms.base import LLM
 from typing import Optional, List, Mapping, Any
-from langchain.tools import WikipediaQueryRun
-from langchain.utilities import WikipediaAPIWrapper
+from langchain_community.tools import WikipediaQueryRun
+from langchain_community.utilities import WikipediaAPIWrapper
 from io import StringIO
 
 #-------------------------------------------------------------------
@@ -113,7 +112,7 @@ def prompting_llm(user_question,_knowledge_base,_chain):
     #             sizes or question length, or retrieve less number of docs."
     #     )
     # Grab and print response
-    response = _chain.run(input_documents=docs, question=user_question)
+    response = _chain({"input_documents": docs, "question": user_question},return_only_outputs=True).get("output_text")
     return response
 #-------------------------------------------------------------------
 def main():

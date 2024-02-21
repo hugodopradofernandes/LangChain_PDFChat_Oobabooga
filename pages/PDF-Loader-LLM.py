@@ -4,9 +4,8 @@ import langchain
 from PyPDF2 import PdfReader
 from langchain.text_splitter import CharacterTextSplitter
 from langchain.chains.question_answering import load_qa_chain
-from langchain.llms import LlamaCpp
-from langchain.vectorstores import Qdrant
-from langchain.embeddings import SentenceTransformerEmbeddings
+from langchain_community.vectorstores import Qdrant
+from langchain_community.embeddings import HuggingFaceEmbeddings as SentenceTransformerEmbeddings
 from langchain.callbacks.manager import CallbackManager
 from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 from langchain.llms.base import LLM
@@ -69,7 +68,6 @@ def fetching_pdf(pdf):
         separator="\n", chunk_size=1000, chunk_overlap=200, length_function=len
     )
     chunks = text_splitter.split_text(text)
-    #embeddings = SentenceTransformerEmbeddings(model_name='hku-nlp/instructor-large')
     embeddings = SentenceTransformerEmbeddings(model_name="flax-sentence-embeddings/all_datasets_v4_MiniLM-L6")
 
     # Create in-memory Qdrant instance
@@ -93,7 +91,7 @@ def prompting_llm(user_question,_knowledge_base,_chain):
     #             sizes or question length, or retrieve less number of docs."
     #     )
     # Grab and print response
-    response = _chain.run(input_documents=docs, question=user_question)
+    response = _chain({"input_documents": docs, "question": user_question},return_only_outputs=True).get("output_text")
     return response
 #-------------------------------------------------------------------
 def main():
