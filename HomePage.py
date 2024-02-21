@@ -2,9 +2,8 @@ import streamlit as st
 import requests
 import langchain
 from langchain.chains import ConversationChain
-from langchain.memory import ConversationBufferMemory
+from langchain.chains.conversation.memory import ConversationSummaryMemory
 from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
-from langchain_community.embeddings import HuggingFaceEmbeddings as SentenceTransformerEmbeddings
 from langchain.llms.base import LLM
 from typing import Optional, List, Mapping, Any
 from io import StringIO
@@ -52,12 +51,6 @@ class webuiLLM(LLM):
 #-------------------------------------------------------------------
 langchain.verbose = False
 
-# Callback just to stream output to stdout, can be removed
-callbacks = [StreamingStdOutCallbackHandler()]
-
-llm = webuiLLM()
-chain = ConversationChain(llm=llm, memory=ConversationBufferMemory(),verbose=True)
-
 #-------------------------------------------------------------------
 # Main page setup
 st.set_page_config(page_title="LLM Wrapper")
@@ -65,16 +58,28 @@ st.header("This is a LLM Wrapper 💬")
 st.write("Select a page on the side menu or use the chat below")
 st.sidebar.success("Select a page above.")
 
+# Callback just to stream output to stdout, can be removed
+callbacks = [StreamingStdOutCallbackHandler()]
+
+#-------------------------------------------------------------------
+#Instantiate chat LLM
+llm = webuiLLM()
+chain = ConversationChain(llm=llm, memory=ConversationSummaryMemory(llm=llm,max_token_limit=500), verbose=False)
+
 #-------------------------------------------------------------------
 @st.cache_data(hash_funcs={StringIO: StringIO.getvalue},show_spinner="Prompting LLM...")
 def prompting_llm(prompt,_chain):
-    response = _chain.invoke(prompt,return_only_outputs=True).get("response")
+    response = _chain.invoke(prompt).get("response")
     return response
 #-------------------------------------------------------------------
 
 # Initialize chat history
 if "messages" not in st.session_state:
     st.session_state.messages = []
+if "buffer" not in st.session_state:
+    st.session_state.buffer = []
+else:
+    chain.memory = st.session_state.buffer
 
 # Display chat messages from history on app rerun
 for message in st.session_state.messages:
@@ -94,3 +99,6 @@ if prompt := st.chat_input("What is up?"):
         st.markdown(response)
     # Add assistant response to chat history
     st.session_state.messages.append({"role": "assistant", "content": response})
+
+# Save chat history buffer to the session
+st.session_state.buffer = chain.memory
