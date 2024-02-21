@@ -84,7 +84,7 @@ def fetching_url(userinputquery):
     page = requests.get(userinputquery)
     soup = BeautifulSoup(page.text, 'html.parser')
     text = soup.get_text()    
-    print(text)
+
     # Split the text into chunks
     text_splitter = CharacterTextSplitter(
         separator="\n", chunk_size=1000, chunk_overlap=200, length_function=len
