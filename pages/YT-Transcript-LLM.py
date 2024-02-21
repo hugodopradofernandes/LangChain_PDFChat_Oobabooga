@@ -132,6 +132,14 @@ def main():
     if youtubeid:
         knowledge_base = fetching_transcript(youtubeid)
         user_question = st.text_input("Ask a question about the Youtube video:")
+        
+        promptoption = st.selectbox(
+                        '...or select a prompt templates',
+                        ("🇺🇸 Summarize the video", "🇧🇷 Faça um resumo do video em português"),index=None,
+                        placeholder="Select a prompt template...")
+        if promptoption:
+            user_question = promptoption
+            
         if user_question:
             response = prompting_llm("This is a video transcript, " + user_question,knowledge_base,chain)
             st.write(response)

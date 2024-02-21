@@ -1,5 +1,6 @@
 import streamlit as st
 import requests
+from bs4 import BeautifulSoup
 import langchain
 from langchain.llms.base import LLM
 from langchain.text_splitter import CharacterTextSplitter
@@ -81,8 +82,9 @@ def fetching_article(wikipediatopic):
 def fetching_url(userinputquery):
 
     page = requests.get(userinputquery)
-    text = (page.text)
-
+    soup = BeautifulSoup(page.text, 'html.parser')
+    text = soup.get_text()    
+    print(text)
     # Split the text into chunks
     text_splitter = CharacterTextSplitter(
         separator="\n", chunk_size=1000, chunk_overlap=200, length_function=len
@@ -143,7 +145,14 @@ def main():
             knowledge_base = fetching_article(userinputquery)
        
         user_question = st.text_input("Ask a question about the loaded content:")
-
+        
+        promptoption = st.selectbox(
+                        '...or select a prompt templates',
+                        ("🇺🇸 Summarize the page", "🇧🇷 Faça um resumo da pagina em português"),index=None,
+                        placeholder="Select a prompt template...")
+        if promptoption:
+            user_question = promptoption
+            
         if user_question:
             response = prompting_llm("This is a web page, " + user_question,knowledge_base,chain)
             st.write(response)
