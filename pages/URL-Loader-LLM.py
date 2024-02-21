@@ -145,7 +145,7 @@ def main():
         user_question = st.text_input("Ask a question about the loaded content:")
 
         if user_question:
-            response = prompting_llm(user_question,knowledge_base,chain)
+            response = prompting_llm("This is a web page, " + user_question,knowledge_base,chain)
             st.write(response)
 #-------------------------------------------------------------------
 
