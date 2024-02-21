@@ -56,7 +56,7 @@ class webuiLLM(LLM):
 #-------------------------------------------------------------------
 langchain.verbose = False
 #-------------------------------------------------------------------
-@st.cache_data(hash_funcs={StringIO: StringIO.getvalue},show_spinner="Fetching data from Wikipedia...")
+@st.cache_data(show_spinner="Fetching data from Wikipedia...")
 def fetching_article(wikipediatopic):
     wikipage = WikipediaQueryRun(api_wrapper=WikipediaAPIWrapper())
     text = wikipage.run(wikipediatopic)
@@ -78,7 +78,7 @@ def fetching_article(wikipediatopic):
     )
     return knowledge_base
 #-------------------------------------------------------------------
-@st.cache_data(hash_funcs={StringIO: StringIO.getvalue},show_spinner="Fetching data from URL...")
+@st.cache_data(show_spinner="Fetching data from URL...")
 def fetching_url(userinputquery):
 
     page = requests.get(userinputquery)
@@ -102,7 +102,7 @@ def fetching_url(userinputquery):
     )
     return knowledge_base
 #-------------------------------------------------------------------
-@st.cache_data(hash_funcs={StringIO: StringIO.getvalue},show_spinner="Prompting LLM...")
+@st.cache_data(show_spinner="Prompting LLM...")
 def prompting_llm(user_question,_knowledge_base,_chain):
     docs = _knowledge_base.similarity_search(user_question, k=4)
     # Calculating prompt (takes time and can optionally be removed)
