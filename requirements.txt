@@ -5,5 +5,5 @@ qdrant-client==1.1.6
 sentence-transformers==2.2.2 
 wikipedia==1.4.0
 youtube-transcript-api==0.6.2
-qdrant-client
+qdrant-client==1.7.3
 bs4==0.0.2
