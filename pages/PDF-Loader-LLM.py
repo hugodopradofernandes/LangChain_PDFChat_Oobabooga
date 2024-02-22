@@ -120,7 +120,7 @@ def main():
         user_question = st.text_input("Ask a question about your PDF:")
 
         if user_question:
-            response = prompting_llm(user_question,knowledge_base,chain)
+            response = prompting_llm("This is a document for reference, based on this text " + user_question,knowledge_base,chain)
             st.write(response)
 #-------------------------------------------------------------------
 

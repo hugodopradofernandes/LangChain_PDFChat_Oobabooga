@@ -154,7 +154,7 @@ def main():
             user_question = promptoption
             
         if user_question:
-            response = prompting_llm("This is a web page, " + user_question,knowledge_base,chain)
+            response = prompting_llm("This is a web page, based on this text " + user_question,knowledge_base,chain)
             st.write(response)
 #-------------------------------------------------------------------
 

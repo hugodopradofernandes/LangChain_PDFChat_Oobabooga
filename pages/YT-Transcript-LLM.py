@@ -141,7 +141,7 @@ def main():
             user_question = promptoption
             
         if user_question:
-            response = prompting_llm("This is a video transcript, " + user_question,knowledge_base,chain)
+            response = prompting_llm("This is a video transcript, based on this text " + user_question,knowledge_base,chain)
             st.write(response)
 #-------------------------------------------------------------------
 
