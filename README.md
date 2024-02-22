@@ -9,8 +9,11 @@ This it just a test using [wafflecomposite/langchain-ask-pdf-local](https://gith
 
 I added multiple PDF files at once, updated Oobabooga api and raised some limits, also added a Wikipedia query page.
 
-![screenshot](https://github.com/hugodopradofernandes/LangChain_PDFChat_Oobabooga/blob/main/screenshots/Screenshot_20240220_071721.png)
-![screenshot](https://github.com/hugodopradofernandes/LangChain_PDFChat_Oobabooga/blob/main/screenshots/Screenshot_20240220_071827.png)
+![screenshot](https://github.com/hugodopradofernandes/LangChain_Wrapper_LocalLLM/blob/main/screenshots/Screenshot_20240222_051136.png)
+![screenshot](https://github.com/hugodopradofernandes/LangChain_Wrapper_LocalLLM/blob/main/screenshots/Screenshot_20240222_051021.png)
+![screenshot](https://github.com/hugodopradofernandes/LangChain_Wrapper_LocalLLM/blob/main/screenshots/Screenshot_20240222_050925.png)
+![screenshot](https://github.com/hugodopradofernandes/LangChain_Wrapper_LocalLLM/blob/main/screenshots/Screenshot_20240222_050737.png)
+
 # To install
 
 1. clone repository
