@@ -4,9 +4,10 @@ Wrapper to chat with a local llm, sending custom content: Webpages, PDFs, Youtub
 
 Oobabooga [Text Generation Web Ui] install is not covered here!!!
 
-This it just a test using [wafflecomposite/langchain-ask-pdf-local](https://github.com/wafflecomposite/langchain-ask-pdf-local) but with [oobabooga/text-generation-webui](https://github.com/oobabooga/text-generation-webui) api, all run locally
+This it just a test using with [oobabooga/text-generation-webui](https://github.com/oobabooga/text-generation-webui) api, all running locally.
 
-I added multiple PDF files at once, updated Oobabooga api and raised some limits, also added a Wikipedia query page.
+I added an option to upload multiple PDF files at once, updated Oobabooga api endpoints, changed some limits and more!
+The chat uses ConversationSummaryMemory to keep context.
 
 ![screenshot](https://github.com/hugodopradofernandes/LangChain_Wrapper_LocalLLM/blob/main/screenshots/Screenshot_20240222_051136.png)
 ![screenshot](https://github.com/hugodopradofernandes/LangChain_Wrapper_LocalLLM/blob/main/screenshots/Screenshot_20240222_051021.png)
