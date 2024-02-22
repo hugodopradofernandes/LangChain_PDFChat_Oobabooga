@@ -71,8 +71,24 @@ chain = ConversationChain(llm=llm, memory=ConversationSummaryMemory(llm=llm,max_
 def prompting_llm(prompt,_chain):
     response = _chain.invoke(prompt).get("response")
     return response
-#-------------------------------------------------------------------
 
+#-------------------------------------------------------------------
+def commands(prompt):
+    match prompt:
+        case "/history":
+            return "Current History Summary:  \n" + chain.memory.load_memory_variables({"history"}).get("history")
+        case "/model":
+            headers = {'Accept': 'application/json'}
+            r = requests.get('http://127.0.0.1:5000/v1/internal/model/info', headers=headers)
+            r.raise_for_status()
+            return "Loaded model:  \n" + r.json()["model_name"]
+        case "/list":
+            headers = {'Accept': 'application/json'}
+            r = requests.get('http://127.0.0.1:5000/v1/internal/model/list', headers=headers)
+            r.raise_for_status()
+            return "Model list:  \n" + """{}""".format("  \n".join(r.json()["model_names"][1:]))
+            
+#-------------------------------------------------------------------
 # Initialize chat history
 if "messages" not in st.session_state:
     st.session_state.messages = []
@@ -92,11 +108,18 @@ if prompt := st.chat_input("What is up?"):
     st.chat_message("user").markdown(prompt)
     # Add user message to chat history
     st.session_state.messages.append({"role": "user", "content": prompt})
-
-    response = prompting_llm(prompt,chain)
-    # Display assistant response in chat message container
-    with st.chat_message("assistant"):
-        st.markdown(response)
+    
+    if prompt.startswith("/"):
+        response = commands(prompt)
+        # Display assistant response in chat message container
+        with st.chat_message("assistant",avatar="🔮"):
+            st.markdown(response)
+    else:
+        response = prompting_llm(prompt,chain)
+        # Display assistant response in chat message container
+        with st.chat_message("assistant"):
+            st.markdown(response)
+#         
     # Add assistant response to chat history
     st.session_state.messages.append({"role": "assistant", "content": response})
 
