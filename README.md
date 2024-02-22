@@ -7,7 +7,8 @@ Oobabooga [Text Generation Web Ui] install is not covered here!!!
 This it just a test using with [oobabooga/text-generation-webui](https://github.com/oobabooga/text-generation-webui) api, all running locally.
 
 I added an option to upload multiple PDF files at once, updated Oobabooga api endpoints, changed some limits and more!
-The chat uses ConversationSummaryMemory to keep context.
+
+The chat on the main page uses ConversationSummaryMemory to keep context.
 
 ![screenshot](https://github.com/hugodopradofernandes/LangChain_Wrapper_LocalLLM/blob/main/screenshots/Screenshot_20240222_051136.png)
 ![screenshot](https://github.com/hugodopradofernandes/LangChain_Wrapper_LocalLLM/blob/main/screenshots/Screenshot_20240222_051021.png)
