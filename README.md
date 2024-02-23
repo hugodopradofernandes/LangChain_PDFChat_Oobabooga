@@ -6,9 +6,15 @@ Oobabooga [Text Generation Web Ui] install is not covered here!!!
 
 This it just a test using with [oobabooga/text-generation-webui](https://github.com/oobabooga/text-generation-webui) api, all running locally.
 
-I added an option to upload multiple PDF files at once, updated Oobabooga api endpoints, changed some limits and more!
-
-The chat on the main page uses ConversationSummaryMemory to keep context.
+Items added from forked repo, which I used as a starting point to learning how to interact with LLM API with embeddings.
+- Added multiple file upload.
+- Updated packages.
+- Target Text Generation Web UI API endpoints updated.
+- Option to query Wikipedia or URLs.
+- Option to query Plain text files.
+- Option to query Youtube video transcripts.
+- Added a chat page, with history and context, using _ConversationSummaryMemory_.
+- Many UI improvements, pratically a new app.
 
 ![screenshot](https://github.com/hugodopradofernandes/LangChain_Wrapper_LocalLLM/blob/main/screenshots/Screenshot_20240222_051136.png)
 ![screenshot](https://github.com/hugodopradofernandes/LangChain_Wrapper_LocalLLM/blob/main/screenshots/Screenshot_20240222_051021.png)
