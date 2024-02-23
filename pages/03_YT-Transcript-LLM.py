@@ -124,7 +124,7 @@ def main():
             )
         )
 #-------------------------------------------------------------------
-    # Wikipedia page setup
+    # YT page setup
     st.set_page_config(page_title="Ask Youtube Video")
     st.header("Ask Youtube Video: 📺")
     youtubeid = st.text_input('Add the desired Youtube video ID or URL here.')

@@ -107,7 +107,7 @@ def main():
             )
         )
 #-------------------------------------------------------------------
-    # PDF page setup
+    # File page setup
     st.set_page_config(page_title="Ask your plain-text files")
     st.header("Ask your plain-text files 🗃️")
     st.write("⚠️ This loader does not parse the file, passing to the LLM as-is in chunks. Works great for plain-text files")

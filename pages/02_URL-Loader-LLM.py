@@ -133,7 +133,7 @@ def main():
             )
         )
 #-------------------------------------------------------------------
-    # Wikipedia page setup
+    # URL page setup
     st.set_page_config(page_title="Ask Wikipedia or URL")
     st.header("Ask Wikipedia or URL: 📚")
     userinputquery = st.text_input('Add the desired Wikipedia topic here, or a URL')
@@ -150,6 +150,7 @@ def main():
                         '...or select a prompt templates',
                         ("🇺🇸 Summarize the page", "🇧🇷 Faça um resumo da pagina em português"),index=None,
                         placeholder="Select a prompt template...")
+        
         if promptoption:
             user_question = promptoption
             
