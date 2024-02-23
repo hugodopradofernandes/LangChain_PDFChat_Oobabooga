@@ -2,9 +2,8 @@
 
 Wrapper to chat with a local llm, sending custom content: Webpages, PDFs, Youtube video transcripts.
 
-Oobabooga [Text Generation Web Ui] install is not covered here!!!
-
 This it just a test using with [oobabooga/text-generation-webui](https://github.com/oobabooga/text-generation-webui) api, all running locally.
+Oobabooga [Text Generation Web Ui] install is not covered here!!! You can replace the API and then use the OpenAI(chat GPT) api instead.
 
 Items added from forked repo, which I used as a starting point to learning how to interact with LLM API with embeddings.
 - Added multiple file upload.
