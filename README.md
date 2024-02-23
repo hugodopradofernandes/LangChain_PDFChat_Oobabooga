@@ -14,6 +14,7 @@ The chat on the main page uses ConversationSummaryMemory to keep context.
 ![screenshot](https://github.com/hugodopradofernandes/LangChain_Wrapper_LocalLLM/blob/main/screenshots/Screenshot_20240222_051021.png)
 ![screenshot](https://github.com/hugodopradofernandes/LangChain_Wrapper_LocalLLM/blob/main/screenshots/Screenshot_20240222_050925.png)
 ![screenshot](https://github.com/hugodopradofernandes/LangChain_Wrapper_LocalLLM/blob/main/screenshots/Screenshot_20240222_050737.png)
+![screenshot](https://github.com/hugodopradofernandes/Local-LLM-LangChain-Wrapper/blob/main/screenshots/Screenshot_20240223_020138.png)
 
 # To install
 
