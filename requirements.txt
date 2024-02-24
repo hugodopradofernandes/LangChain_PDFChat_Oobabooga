@@ -1,9 +1,9 @@
+bs4==0.0.2
 langchain==0.1.8
+pydantic==2.6.1
 PyPDF2==3.0.1
-streamlit==1.31.1
-qdrant-client==1.1.6
+qdrant-client==1.7.3
 sentence-transformers==2.2.2 
+streamlit==1.31.1
 wikipedia==1.4.0
 youtube-transcript-api==0.6.2
-qdrant-client==1.7.3
-bs4==0.0.2
