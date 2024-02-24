@@ -1,10 +1,10 @@
 import streamlit as st
 import requests
 import langchain
+from langchain.llms.base import LLM
 from langchain.chains import ConversationChain
 from langchain.chains.conversation.memory import ConversationSummaryMemory
 from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
-from langchain.llms.base import LLM
 from typing import Optional, List, Mapping, Any
 from io import StringIO
 
@@ -56,13 +56,22 @@ langchain.verbose = False
 st.set_page_config(page_title="LLM Wrapper")
 st.header("This is a LLM Wrapper 💬")
 st.write("Select a page on the side menu or use the chat below")
-st.sidebar.success("Select a page above.")
+with st.sidebar.success("Choose a page above"):
+    st.sidebar.markdown(
+    f"""
+    <style>
+    [data-testid='stSidebarNav'] > ul {{
+        min-height: 40vh;
+    }} 
+    </style>
+    """,
+    unsafe_allow_html=True,)
 
 # Callback just to stream output to stdout, can be removed
 callbacks = [StreamingStdOutCallbackHandler()]
 
 #-------------------------------------------------------------------
-#Instantiate chat LLM
+#Instantiate chat LLM and the search agent
 llm = webuiLLM()
 chain = ConversationChain(llm=llm, memory=ConversationSummaryMemory(llm=llm,max_token_limit=500), verbose=False)
 
@@ -74,7 +83,7 @@ def prompting_llm(prompt,_chain):
 
 #-------------------------------------------------------------------
 def commands(prompt):
-    match prompt:
+    match prompt.split(" ")[0]:
         case "/history":
             return "Current History Summary:  \n" + chain.memory.load_memory_variables({"history"}).get("history")
         case "/model":
@@ -86,8 +95,31 @@ def commands(prompt):
             headers = {'Accept': 'application/json'}
             r = requests.get('http://127.0.0.1:5000/v1/internal/model/list', headers=headers)
             r.raise_for_status()
-            return "Model list:  \n" + """{}""".format("  \n".join(r.json()["model_names"][1:]))
+            return "Model list:  \n" + """{}""".format("  \n".join(r.json()["model_names"][0:]))
+        case s if s.startswith('/load'):
+            model = prompt.split(" ")[1]
+            headers = {'Accept': 'application/json'}
+            if model in requests.get('http://127.0.0.1:5000/v1/internal/model/list', headers=headers).json()["model_names"][0:]:
+                r = requests.post('http://127.0.0.1:5000/v1/internal/model/load', headers=headers, json={"model_name": model})
+                r.raise_for_status()
+                if r.status_code == 200:
+                    return "Ok, model changed."
+                else:
+                    return "Load command failed."
+            else:
+                return "Model not in the list. Check the list with the /list command."
+        case "/stop":
+            headers = {'Accept': 'application/json'}
+            r = requests.post('http://127.0.0.1:5000/v1/internal/stop-generation', headers=headers)
+            r.raise_for_status()
+            if r.status_code == 200:
+                return "Ok, generation stopped."
+            else:
+                return "Stop command failed. Sometimes the LLM API becomes busy while generating text..."
             
+        case "/help":
+            return "Comand list available: /history, /list, /stop, /help"
+
 #-------------------------------------------------------------------
 # Initialize chat history
 if "messages" not in st.session_state:
