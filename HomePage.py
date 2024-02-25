@@ -74,7 +74,6 @@ callbacks = [StreamingStdOutCallbackHandler()]
 #Instantiate chat LLM and the search agent
 llm = webuiLLM()
 chain = ConversationChain(llm=llm, memory=ConversationSummaryMemory(llm=llm,max_token_limit=500), verbose=False)
-response = ""
 
 #-------------------------------------------------------------------
 def prompting_llm(prompt,_chain):
@@ -186,6 +185,9 @@ if prompt := st.chat_input("What is up?"):
     st.session_state.messages.append({"role": "assistant", "content": response})
 
 # Save chat history buffer to the session
-st.session_state.history = chain.memory
-st.session_state.last_prompt = prompt
-st.session_state.last_response = response
+try:
+    st.session_state.history = chain.memory
+    st.session_state.last_prompt = prompt
+    st.session_state.last_response = response
+except:
+    pass
