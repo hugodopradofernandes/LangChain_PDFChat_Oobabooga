@@ -59,7 +59,7 @@ langchain.verbose = False
 #-------------------------------------------------------------------
 def fetching_transcript(youtubeid):
     
-    if "youtube" in youtubeid:
+    if "youtu" in youtubeid:
         data = re.findall(r"(?:v=|\/)([0-9A-Za-z_-]{11}).*", youtubeid)
         youtubeid = data[0]
     # retrieve the available transcripts
