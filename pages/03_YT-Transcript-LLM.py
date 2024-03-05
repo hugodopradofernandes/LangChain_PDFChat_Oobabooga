@@ -5,8 +5,6 @@ from langchain.text_splitter import CharacterTextSplitter
 from langchain.chains.question_answering import load_qa_chain
 from langchain_community.vectorstores import Qdrant
 from langchain_community.embeddings import HuggingFaceEmbeddings as SentenceTransformerEmbeddings
-from langchain.callbacks.manager import CallbackManager
-from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 from langchain.llms.base import LLM
 from typing import Optional, List, Mapping, Any
 from youtube_transcript_api import YouTubeTranscriptApi
@@ -26,7 +24,7 @@ class webuiLLM(LLM):
             "http://127.0.0.1:5000/v1/completions",
             json={
                 "prompt": prompt,
-                "max_tokens": 1024,
+                "max_tokens": 512,
                 "do_sample": "false",
                 "temperature": 0.7,
                 "top_p": 0.1,
@@ -57,11 +55,17 @@ class webuiLLM(LLM):
 #-------------------------------------------------------------------
 langchain.verbose = False
 #-------------------------------------------------------------------
-def fetching_transcript(youtubeid):
-    
+def fetching_youtubeid(youtubeid):
     if "youtu" in youtubeid:
         data = re.findall(r"(?:v=|\/)([0-9A-Za-z_-]{11}).*", youtubeid)
         youtubeid = data[0]
+    return youtubeid
+
+#-------------------------------------------------------------------
+@st.cache_data(show_spinner="Fetching data from Youtube...")
+def fetching_transcript(youtubeid):
+    youtubeid = fetching_youtubeid(youtubeid)
+
     # retrieve the available transcripts
     #transcript_list = YouTubeTranscriptApi.list_transcripts(youtubeid)
 
@@ -88,6 +92,7 @@ def fetching_transcript(youtubeid):
     return knowledge_base
 
 #-------------------------------------------------------------------
+@st.cache_data(show_spinner="Prompting LLM...")
 def prompting_llm(user_question,_knowledge_base,_chain):
     docs = _knowledge_base.similarity_search(user_question, k=4)
     # Calculating prompt (takes time and can optionally be removed)
@@ -109,8 +114,6 @@ def parseYoutubeURL(url:str):
    return ""
 #-------------------------------------------------------------------
 def main():
-    # Callback just to stream output to stdout, can be removed
-    callback_manager = CallbackManager([StreamingStdOutCallbackHandler()])
 
     llm = webuiLLM()
 
@@ -126,9 +129,9 @@ def main():
 #-------------------------------------------------------------------
     # YT page setup
     st.set_page_config(page_title="Ask Youtube Video")
-    st.header("Ask Youtube Video: 📺")
+    st.header("Ask Youtube Video 📺")
     youtubeid = st.text_input('Add the desired Youtube video ID or URL here.')
-
+    
     if youtubeid:
         knowledge_base = fetching_transcript(youtubeid)
         user_question = st.text_input("Ask a question about the Youtube video:")
@@ -137,6 +140,7 @@ def main():
                         '...or select a prompt templates',
                         ("🇺🇸 Summarize the video", "🇧🇷 Faça um resumo do video em português"),index=None,
                         placeholder="Select a prompt template...")
+        
         if promptoption:
             user_question = promptoption
             

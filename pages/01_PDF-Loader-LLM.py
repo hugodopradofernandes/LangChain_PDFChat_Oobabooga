@@ -6,8 +6,6 @@ from langchain.text_splitter import CharacterTextSplitter
 from langchain.chains.question_answering import load_qa_chain
 from langchain_community.vectorstores import Qdrant
 from langchain_community.embeddings import HuggingFaceEmbeddings as SentenceTransformerEmbeddings
-from langchain.callbacks.manager import CallbackManager
-from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 from langchain.llms.base import LLM
 from typing import Optional, List, Mapping, Any
 from io import StringIO
@@ -23,7 +21,7 @@ class webuiLLM(LLM):
             "http://127.0.0.1:5000/v1/completions",
             json={
                 "prompt": prompt,
-                "max_tokens": 1024,
+                "max_tokens": 512,
                 "do_sample": "false",
                 "temperature": 0.7,
                 "top_p": 0.1,
@@ -95,8 +93,6 @@ def prompting_llm(user_question,_knowledge_base,_chain):
     return response
 #-------------------------------------------------------------------
 def main():
-    # Callback just to stream output to stdout, can be removed
-    callback_manager = CallbackManager([StreamingStdOutCallbackHandler()])
 
     llm = webuiLLM()
 
