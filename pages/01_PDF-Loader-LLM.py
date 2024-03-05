@@ -77,20 +77,20 @@ def fetching_pdf(pdf):
     )
     return knowledge_base
 #-------------------------------------------------------------------
-@st.cache_data(show_spinner="Prompting LLM...")
 def prompting_llm(user_question,_knowledge_base,_chain):
-    docs = _knowledge_base.similarity_search(user_question, k=4)
-    # Calculating prompt (takes time and can optionally be removed)
-    prompt_len = _chain.prompt_length(docs=docs, question=user_question)
-    st.write(f"Prompt len: {prompt_len}")
-    # if prompt_len > llm.n_ctx:
-    #     st.write(
-    #         "Prompt length is more than n_ctx. This will likely fail. Increase model's context, reduce chunk's \
-    #             sizes or question length, or retrieve less number of docs."
-    #     )
-    # Grab and print response
-    response = _chain.invoke({"input_documents": docs, "question": user_question},return_only_outputs=True).get("output_text")
-    return response
+    with st.spinner(text="Prompting LLM..."):
+        docs = _knowledge_base.similarity_search(user_question, k=4)
+        # Calculating prompt (takes time and can optionally be removed)
+        prompt_len = _chain.prompt_length(docs=docs, question=user_question)
+        st.write(f"Prompt len: {prompt_len}")
+        # if prompt_len > llm.n_ctx:
+        #     st.write(
+        #         "Prompt length is more than n_ctx. This will likely fail. Increase model's context, reduce chunk's \
+        #             sizes or question length, or retrieve less number of docs."
+        #     )
+        # Grab and print response
+        response = _chain.invoke({"input_documents": docs, "question": user_question},return_only_outputs=True).get("output_text")
+        return response
 #-------------------------------------------------------------------
 def main():
 
