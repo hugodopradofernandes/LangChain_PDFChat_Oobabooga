@@ -4,7 +4,6 @@ import langchain
 from langchain.llms.base import LLM
 from langchain.chains import ConversationChain
 from langchain.chains.conversation.memory import ConversationSummaryMemory
-from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 from typing import Optional, List, Mapping, Any
 from io import StringIO
 
@@ -66,9 +65,6 @@ with st.sidebar.success("Choose a page above"):
     </style>
     """,
     unsafe_allow_html=True,)
-
-# Callback just to stream output to stdout, can be removed
-callbacks = [StreamingStdOutCallbackHandler()]
 
 #-------------------------------------------------------------------
 #Instantiate chat LLM and the search agent
