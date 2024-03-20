@@ -140,7 +140,7 @@ def main():
         else:
             knowledge_base = fetching_article(userinputquery)
        
-        user_question = st.text_input("Ask a question about the loaded content:")
+        user_question = st.chat_input("Ask a question about the loaded content:")
         
         promptoption = st.selectbox(
                         '...or select a prompt templates',

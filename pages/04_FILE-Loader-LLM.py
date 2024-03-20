@@ -112,7 +112,7 @@ def main():
     
     if files:
         knowledge_base = fetching_files(files)
-        user_question = st.text_input("Ask a question about your plain-text files:")
+        user_question = st.chat_input("Ask a question about your plain-text files:")
 
         if user_question:
             response = prompting_llm("This is a document for reference, based on this text " + user_question,knowledge_base,chain)
