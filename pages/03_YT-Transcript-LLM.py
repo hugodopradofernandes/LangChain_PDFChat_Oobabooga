@@ -134,7 +134,7 @@ def main():
     
     if youtubeid:
         knowledge_base = fetching_transcript(youtubeid)
-        user_question = st.chat_input("Ask a question about the Youtube video:")
+        user_question = st.text_input("Ask a question about the Youtube video:")
         
         promptoption = st.selectbox(
                         '...or select a prompt templates',
