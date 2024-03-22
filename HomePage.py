@@ -6,6 +6,8 @@ from langchain.chains import ConversationChain
 from langchain.chains.conversation.memory import ConversationSummaryMemory
 from typing import Optional, List, Mapping, Any
 from io import StringIO
+import datetime
+import functools
 
 #-------------------------------------------------------------------
 class webuiLLM(LLM):
@@ -47,8 +49,20 @@ class webuiLLM(LLM):
         return {
 
         }
+
 #-------------------------------------------------------------------
 langchain.verbose = False
+#-------------------------------------------------------------------
+def timeit(func):
+    @functools.wraps(func)
+    def new_func(*args, **kwargs):
+        start_time = datetime.datetime.now()
+        result = func(*args, **kwargs)
+        elapsed_time = datetime.datetime.now() - start_time
+        print('function [{}] finished in {} ms'.format(
+            func.__name__, str(elapsed_time)))
+        return result
+    return new_func
 
 #-------------------------------------------------------------------
 # Main page setup
@@ -72,12 +86,17 @@ llm = webuiLLM()
 chain = ConversationChain(llm=llm, memory=ConversationSummaryMemory(llm=llm,max_token_limit=500), verbose=False)
 
 #-------------------------------------------------------------------
+@timeit
 def prompting_llm(prompt,_chain):
     with st.spinner(text="Prompting LLM..."):
+        print('\n# '+datetime.datetime.now().astimezone().isoformat()+' =====================================================')
+        print("Prompt: "+prompt+"\n")
         response = _chain.invoke(prompt).get("response")
+        print("-------------------\nResponse: "+response+"\n")
         return response
 
 #-------------------------------------------------------------------
+@timeit
 def commands(prompt,last_prompt,last_response):
     match prompt.split(" ")[0]:
         case "/continue":
