@@ -144,7 +144,7 @@ def prompting_llm(user_question,_knowledge_base,_chain,k_value):
         #     )
         # Grab and print response
         response = _chain.invoke({"input_documents": doc_to_prompt, "question": user_question},return_only_outputs=True).get("output_text")
-        print("-------------------\nResponse: "+response+"\n")
+        print("-------------------\nResponse:\n"+response+"\n")
         return response
     
 #-------------------------------------------------------------------
