@@ -66,9 +66,9 @@ def timeit(func):
 
 #-------------------------------------------------------------------
 # Main page setup
-st.set_page_config(page_title="LLM Wrapper")
+st.set_page_config(page_title="LLM Wrapper", layout="wide")
 st.header("This is a LLM Wrapper 💬")
-st.write("Select a page on the side menu or use the chat below")
+st.info('Select a page on the side menu or use the chat below.', icon="📄")
 with st.sidebar.success("Choose a page above"):
     st.sidebar.markdown(
     f"""
@@ -177,6 +177,8 @@ else:
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
+
+st.divider()
 
 # React to user input
 if prompt := st.chat_input("What is up?"):
