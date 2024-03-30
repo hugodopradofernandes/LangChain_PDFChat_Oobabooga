@@ -1,16 +1,25 @@
 import streamlit as st
-import requests
-import langchain
-from langchain.text_splitter import CharacterTextSplitter
-from langchain.chains.question_answering import load_qa_chain
-from langchain_community.vectorstores import Qdrant
-from langchain_community.embeddings import HuggingFaceEmbeddings as SentenceTransformerEmbeddings
-from langchain.callbacks.manager import CallbackManager
-from langchain.llms.base import LLM
-from typing import Optional, List, Mapping, Any
+from streamlit import runtime
+from streamlit.runtime.scriptrunner import get_script_run_ctx
+
 from io import StringIO
+from typing import Optional, List, Mapping, Any
 import datetime
 import functools
+import re
+import requests
+import textwrap
+
+import langchain
+from langchain.callbacks.manager import CallbackManager
+from langchain.chains.question_answering import load_qa_chain
+from langchain.llms.base import LLM
+from langchain.text_splitter import CharacterTextSplitter
+from langchain_community.embeddings import HuggingFaceEmbeddings as SentenceTransformerEmbeddings
+from langchain_community.vectorstores import Qdrant
+from langchain_core.prompts import PromptTemplate
+from langchain_openai import OpenAI
+from langchain_openai import OpenAIEmbeddings
 
 #-------------------------------------------------------------------
 class webuiLLM(LLM):
@@ -54,6 +63,7 @@ class webuiLLM(LLM):
     
 #-------------------------------------------------------------------
 langchain.verbose = False
+apikeyfile = '/mnt/sdc1/llm_text_apps/openai_api.txt'
 #-------------------------------------------------------------------
 def timeit(func):
     @functools.wraps(func)
@@ -65,6 +75,33 @@ def timeit(func):
             func.__name__, str(elapsed_time)))
         return result
     return new_func
+
+#-------------------------------------------------------------------
+@timeit
+def get_file_contents(filename):
+    try:
+        with open(filename, 'r') as f:
+            # It's assumed our file contains a single line,
+            # with our API key
+            return f.read().strip()
+    except FileNotFoundError:
+        print("OpenAI API key not found - This API won't be available")
+        return "no_key"
+    
+#-------------------------------------------------------------------
+@timeit
+def get_remote_ip() -> str:
+    """Get remote ip."""
+    try:
+        ctx = get_script_run_ctx()
+        if ctx is None:
+            return None
+        session_info = runtime.get_instance().get_client(ctx.session_id)
+        if session_info is None:
+            return None
+    except Exception as e:
+        return None
+    return session_info.request.remote_ip
 
 #-------------------------------------------------------------------
 @timeit
@@ -92,11 +129,11 @@ def fetching_files(files,chunk_size,chunk_overlap):
     return knowledge_base
 #-------------------------------------------------------------------
 @timeit
-def prompting_llm(user_question,_knowledge_base,_chain,k_value):
+def prompting_llm(user_question,_knowledge_base,_chain,k_value,llm_used):
     with st.spinner(text="Prompting LLM..."):
         doc_to_prompt = _knowledge_base.similarity_search(user_question, k=k_value)
         docs_stats = _knowledge_base.similarity_search_with_score(user_question, k=k_value)
-        print('\n# '+datetime.datetime.now().astimezone().isoformat()+' =====================================================')
+        print('\n# '+datetime.datetime.now().astimezone().isoformat()+' from ['+get_remote_ip()+'] =====================================================')
         print("Prompt: "+user_question+"\n")
         for x in range(len(docs_stats)):
             try:
@@ -116,7 +153,7 @@ def prompting_llm(user_question,_knowledge_base,_chain,k_value):
         #     )
         # Grab and print response
         response = _chain.invoke({"input_documents": doc_to_prompt, "question": user_question},return_only_outputs=True).get("output_text")
-        print("-------------------\nResponse:\n"+response+"\n")
+        print("-------------------\nResponse ["+llm_used+"]:\n"+response+"\n")
         return response
 
 #-------------------------------------------------------------------
@@ -138,12 +175,52 @@ def chunk_search(user_question,_knowledge_base,k_value):
         return result
 
 #-------------------------------------------------------------------
+@timeit
+def commands(prompt,last_prompt,last_response,knowledge_base,chain,k_value,llm_used):
+    match prompt.split(" ")[0]:
+        case "/continue":
+            prompt = "Given this question: " + last_prompt.strip() + ", continue the following text you already started: " + last_response.rsplit("\n\n", 3)[0]
+            response = prompting_llm(prompt,knowledge_base,chain,k_value,document_bug,llm_used).replace("\n","  \n")
+            return response
+        
+        case "/model":
+            headers = {'Accept': 'application/json'}
+            r = requests.get('http://127.0.0.1:5000/v1/internal/model/info', headers=headers)
+            r.raise_for_status()
+            return "Loaded model:  \n" + r.json()["model_name"]
+
+        case "/recall":
+            return "Prompt: _"+last_prompt+"_  \n  \nResponse: "+last_response
+
+        case "/repeat":
+            prompt = "This is a document for reference, based on this text " + last_prompt.strip() + ":"
+            response = prompting_llm(prompt,knowledge_base,chain,k_value,document_bug,llm_used).replace("\n","  \n")
+            return response
+        
+        case "/stop":
+            headers = {'Accept': 'application/json'}
+            r = requests.post('http://127.0.0.1:5000/v1/internal/stop-generation', headers=headers)
+            r.raise_for_status()
+            if r.status_code == 200:
+                return "Ok, generation stopped."
+            else:
+                return "Stop command failed. Sometimes the LLM API becomes busy while generating text..."
+            
+        case "/help":
+            return "Comand list available: /continue, /model, /recall, /repeat, /stop, /help"
+        
+#-------------------------------------------------------------------
 def main():
 
-    llm = webuiLLM()
+    llm_local = webuiLLM()
+    OPENAI_API_KEY = get_file_contents(apikeyfile)
+    llm_openai = OpenAI(openai_api_key=OPENAI_API_KEY,model='gpt-3.5-turbo-instruct', max_tokens=1024)
 
     # Load question answering chain
-    chain = load_qa_chain(llm, chain_type="stuff")
+    chain_local = load_qa_chain(llm_local, chain_type="stuff")
+    chain_openai = load_qa_chain(llm_openai, chain_type="stuff")
+    chain = chain_local
+    llm_used = "local"
 
     if "Helpful Answer:" in chain.llm_chain.prompt.template:
         chain.llm_chain.prompt.template = (
@@ -151,11 +228,25 @@ def main():
                 "Helpful Answer:", "\n### Assistant:"
             )
         )
+            
+#-------------------------------------------------------------------
+    # Initialize history
+    if "last_response" not in st.session_state:
+        st.session_state.last_response = ""
+        last_response = ""
+    else:
+        last_response = st.session_state.last_response
+    if "last_prompt" not in st.session_state:
+        st.session_state.last_prompt = ""
+        last_prompt = ""
+    else:
+        last_prompt = st.session_state.last_prompt
+        
 #-------------------------------------------------------------------
     # File page setup
     st.set_page_config(page_title="Ask your plain-text files", layout="wide")
     st.header("Ask your plain-text files 🗃️")
-    st.write("⚠️ This loader does not parse the file, passing to the LLM as-is in chunks. Works great for plain-text files")
+    st.warning('This loader does not parse the file, passing to the LLM as-is in chunks. Works great for plain-text files.', icon="⚠️")
     files = st.file_uploader("Upload file(s)", accept_multiple_files=True)
 
     with st.expander("Advanced options"):
@@ -163,19 +254,40 @@ def main():
         chunk_size = st.slider('Chunk size | default = 1000 [Rebuilds the Vector store]', 500, 1500, 1000, step = 20)
         chunk_overlap = st.slider('Chunk overlap | default = 20 [Rebuilds the Vector store]', 0, 400, 200, step = 20)
         chunk_display = st.checkbox("Display chunk results")
+        if get_file_contents(apikeyfile) != 'no_key':
+            llm_selection = st.checkbox("Use OpenAI API instead of local LLM - [Faster, but it costs me a little money]")
+            if llm_selection:
+                chain = chain_openai
+                llm_used = "openai"
         
     if files:
         knowledge_base = fetching_files(files,chunk_size,chunk_overlap)
         user_question = st.chat_input("Ask a question about your plain-text files:")
 
         if user_question:
-            response = prompting_llm("This is a document for reference, based on this text " + user_question.strip(),knowledge_base,chain,k_value)
-            st.write("_"+user_question.strip()+"_")
-            st.write(response)
-            if chunk_display:
-                chunk_display_result = chunk_search(user_question.strip(),knowledge_base,k_value)
-                with st.expander("Chunk results"):
-                    st.code(chunk_display_result)
+            if user_question.startswith("/"):
+                response = commands(user_question,last_prompt,last_response,knowledge_base,chain,k_value,llm_used)
+                # Display assistant response in chat message container
+                with st.chat_message("assistant",avatar="🔮"):
+                    st.markdown(response)
+            else:   
+                response = prompting_llm("This is a document for reference, based on this text " + user_question.strip(),knowledge_base,chain,k_value,llm_used).replace("\n","  \n")
+                st.write("_"+user_question.strip()+"_")
+                st.write(response)
+                if chunk_display:
+                    chunk_display_result = chunk_search(user_question.strip(),knowledge_base,k_value)
+                    with st.expander("Chunk results"):
+                        chunk_display_result = '  \n'.join(l for line in chunk_display_result.splitlines() for l in textwrap.wrap(line, width=120))
+                        st.code(chunk_display_result)
+                        
+#-------------------------------------------------------------------
+    # Save chat history buffer to the session
+    try:
+        st.session_state.last_response = response
+        if not user_question.startswith("/"):
+            st.session_state.last_prompt = user_question.strip()
+    except:
+        pass
 #-------------------------------------------------------------------
 
 if __name__ == "__main__":

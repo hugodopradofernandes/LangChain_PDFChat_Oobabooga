@@ -1,18 +1,28 @@
 import streamlit as st
-import requests
+from streamlit import runtime
+from streamlit.runtime.scriptrunner import get_script_run_ctx
+
 from bs4 import BeautifulSoup
-import langchain
-from langchain.llms.base import LLM
-from langchain.text_splitter import CharacterTextSplitter
-from langchain.chains.question_answering import load_qa_chain
-from langchain_community.vectorstores import Qdrant
-from langchain_community.embeddings import HuggingFaceEmbeddings as SentenceTransformerEmbeddings
-from typing import Optional, List, Mapping, Any
-from langchain_community.tools import WikipediaQueryRun
-from langchain_community.utilities import WikipediaAPIWrapper
 from io import StringIO
+from typing import Optional, List, Mapping, Any
 import datetime
 import functools
+import re
+import requests
+import textwrap
+
+import langchain
+from langchain.chains import LLMChain
+from langchain.chains.question_answering import load_qa_chain
+from langchain.llms.base import LLM
+from langchain.text_splitter import CharacterTextSplitter
+from langchain_community.embeddings import HuggingFaceEmbeddings as SentenceTransformerEmbeddings
+from langchain_community.tools import WikipediaQueryRun
+from langchain_community.utilities import WikipediaAPIWrapper
+from langchain_community.vectorstores import Qdrant
+from langchain_core.prompts import PromptTemplate
+from langchain_openai import OpenAI
+from langchain_openai import OpenAIEmbeddings
 
 #-------------------------------------------------------------------
 class webuiLLM(LLM):
@@ -56,6 +66,7 @@ class webuiLLM(LLM):
     
 #-------------------------------------------------------------------
 langchain.verbose = False
+apikeyfile = '/mnt/sdc1/llm_text_apps/openai_api.txt'
 #-------------------------------------------------------------------
 def timeit(func):
     @functools.wraps(func)
@@ -67,6 +78,33 @@ def timeit(func):
             func.__name__, str(elapsed_time)))
         return result
     return new_func
+
+#-------------------------------------------------------------------
+@timeit
+def get_file_contents(filename):
+    try:
+        with open(filename, 'r') as f:
+            # It's assumed our file contains a single line,
+            # with our API key
+            return f.read().strip()
+    except FileNotFoundError:
+        print("OpenAI API key not found - This API won't be available")
+        return "no_key"
+    
+#-------------------------------------------------------------------
+@timeit
+def get_remote_ip() -> str:
+    """Get remote ip."""
+    try:
+        ctx = get_script_run_ctx()
+        if ctx is None:
+            return None
+        session_info = runtime.get_instance().get_client(ctx.session_id)
+        if session_info is None:
+            return None
+    except Exception as e:
+        return None
+    return session_info.request.remote_ip
 
 #-------------------------------------------------------------------
 @timeit
@@ -120,11 +158,11 @@ def fetching_url(userinputquery,chunk_size,chunk_overlap):
 
 #-------------------------------------------------------------------
 @timeit
-def prompting_llm(user_question,_knowledge_base,_chain,k_value):
+def prompting_llm(user_question,_knowledge_base,_chain,k_value,llm_used):
     with st.spinner(text="Prompting LLM..."):
         doc_to_prompt = _knowledge_base.similarity_search(user_question, k=k_value)
         docs_stats = _knowledge_base.similarity_search_with_score(user_question, k=k_value)
-        print('\n# '+datetime.datetime.now().astimezone().isoformat()+' =====================================================')
+        print('\n# '+datetime.datetime.now().astimezone().isoformat()+' from ['+get_remote_ip()+'] =====================================================')
         print("Prompt: "+user_question+"\n")
         for x in range(len(docs_stats)):
             try:
@@ -144,7 +182,7 @@ def prompting_llm(user_question,_knowledge_base,_chain,k_value):
         #     )
         # Grab and print response
         response = _chain.invoke({"input_documents": doc_to_prompt, "question": user_question},return_only_outputs=True).get("output_text")
-        print("-------------------\nResponse:\n"+response+"\n")
+        print("-------------------\nResponse ["+llm_used+"]:\n"+response+"\n")
         return response
     
 #-------------------------------------------------------------------
@@ -168,10 +206,15 @@ def chunk_search(user_question,_knowledge_base,k_value):
 #-------------------------------------------------------------------
 def main():
 
-    llm = webuiLLM()
+    llm_local = webuiLLM()
+    OPENAI_API_KEY = get_file_contents(apikeyfile)
+    llm_openai = OpenAI(openai_api_key=OPENAI_API_KEY,model='gpt-3.5-turbo-instruct', max_tokens=1024)
 
     # Load question answering chain
-    chain = load_qa_chain(llm, chain_type="stuff")
+    chain_local = load_qa_chain(llm_local, chain_type="stuff")
+    chain_openai = load_qa_chain(llm_openai, chain_type="stuff")
+    chain = chain_local
+    llm_used = "local"
 
     if "Helpful Answer:" in chain.llm_chain.prompt.template:
         chain.llm_chain.prompt.template = (
@@ -191,7 +234,12 @@ def main():
         chunk_size = st.slider('Chunk size | default = 1000 [Rebuilds the Vector store]', 500, 1500, 1000, step = 20)
         chunk_overlap = st.slider('Chunk overlap | default = 20 [Rebuilds the Vector store]', 0, 400, 200, step = 20)
         chunk_display = st.checkbox("Display chunk results")
-
+        if get_file_contents(apikeyfile) != 'no_key':
+            llm_selection = st.checkbox("Use OpenAI API instead of local LLM - [Faster, but it costs me a little money]")
+            if llm_selection:
+                chain = chain_openai
+                llm_used = "openai"
+        
     if userinputquery:
         if userinputquery.startswith("http"):
             knowledge_base = fetching_url(userinputquery,chunk_size,chunk_overlap)
@@ -209,12 +257,13 @@ def main():
             user_question = promptoption
             
         if user_question:
-            response = prompting_llm("This is a web page, based on this text " + user_question.strip(),knowledge_base,chain,k_value)
+            response = prompting_llm("This is a page content, based on this text " + user_question.strip(),knowledge_base,chain,k_value,llm_used).replace("\n","  \n")
             st.write("_"+user_question.strip()+"_")
             st.write(response)
             if chunk_display:
                 chunk_display_result = chunk_search(user_question.strip(),knowledge_base,k_value)
                 with st.expander("Chunk results"):
+                    chunk_display_result = '  \n'.join(l for line in chunk_display_result.splitlines() for l in textwrap.wrap(line, width=120))
                     st.code(chunk_display_result)
 #-------------------------------------------------------------------
 
