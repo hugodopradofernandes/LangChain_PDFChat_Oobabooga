@@ -207,7 +207,9 @@ def main():
         </style>
         """,
         unsafe_allow_html=True,)
-       
+    
+    st.divider()
+    
     #-------------------------------------------------------------------
     # Initialize chat history
     if "messages" not in st.session_state:
@@ -231,8 +233,6 @@ def main():
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
-
-    st.divider()
         
     # React to user input
     if prompt := st.chat_input("What is up?"):
