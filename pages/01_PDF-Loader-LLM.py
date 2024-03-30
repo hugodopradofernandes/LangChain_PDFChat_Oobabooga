@@ -138,7 +138,7 @@ def prompting_llm(user_question,_knowledge_base,_chain,k_value,llm_used):
         doc_to_prompt = _knowledge_base.similarity_search(user_question, k=k_value)
         docs_stats = _knowledge_base.similarity_search_with_score(user_question, k=k_value)
         print('\n# '+datetime.datetime.now().astimezone().isoformat()+' from ['+get_remote_ip()+'] =====================================================')
-        print("Prompt: "+user_question+"\n")
+        print("Prompt ["+llm_used+"]: "+user_question+"\n")
         for x in range(len(docs_stats)):
             try:
                 print('# '+str(x)+' -------------------')
@@ -279,6 +279,7 @@ def main():
                 st.write(response)
                 if chunk_display:
                     chunk_display_result = chunk_search(user_question.strip(),knowledge_base,k_value)
+                    st.divider()
                     with st.expander("Chunk results"):
                         chunk_display_result = '  \n'.join(l for line in chunk_display_result.splitlines() for l in textwrap.wrap(line, width=120))
                         st.code(chunk_display_result)

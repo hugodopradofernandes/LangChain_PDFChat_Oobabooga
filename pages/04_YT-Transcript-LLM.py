@@ -254,6 +254,7 @@ def main():
             st.write(response)
             if chunk_display:
                 chunk_display_result = chunk_search(user_question.strip(),knowledge_base,k_value)
+                st.divider()
                 with st.expander("Chunk results"):
                     chunk_display_result = '  \n'.join(l for line in chunk_display_result.splitlines() for l in textwrap.wrap(line, width=120))
                     st.code(chunk_display_result)
