@@ -1,13 +1,20 @@
 import streamlit as st
-import requests
-import langchain
-from langchain.llms.base import LLM
-from langchain.chains import ConversationChain
-from langchain.chains.conversation.memory import ConversationSummaryMemory
-from typing import Optional, List, Mapping, Any
+from streamlit import runtime
+from streamlit.runtime.scriptrunner import get_script_run_ctx
+
 from io import StringIO
+from typing import Optional, List, Mapping, Any
 import datetime
 import functools
+import requests
+
+import langchain
+from langchain.chains import ConversationChain
+from langchain.chains.conversation.memory import ConversationSummaryMemory
+from langchain.llms.base import LLM
+from langchain_core.prompts import PromptTemplate
+from langchain_openai import OpenAI
+from langchain_openai import OpenAIEmbeddings
 
 #-------------------------------------------------------------------
 class webuiLLM(LLM):
@@ -52,6 +59,7 @@ class webuiLLM(LLM):
 
 #-------------------------------------------------------------------
 langchain.verbose = False
+apikeyfile = '/mnt/sdc1/llm_text_apps/openai_api.txt'
 #-------------------------------------------------------------------
 def timeit(func):
     @functools.wraps(func)
@@ -65,43 +73,49 @@ def timeit(func):
     return new_func
 
 #-------------------------------------------------------------------
-# Main page setup
-st.set_page_config(page_title="LLM Wrapper", layout="wide")
-st.header("This is a LLM Wrapper 💬")
-st.info('Select a page on the side menu or use the chat below.', icon="📄")
-with st.sidebar.success("Choose a page above"):
-    st.sidebar.markdown(
-    f"""
-    <style>
-    [data-testid='stSidebarNav'] > ul {{
-        min-height: 40vh;
-    }} 
-    </style>
-    """,
-    unsafe_allow_html=True,)
-
-#-------------------------------------------------------------------
-#Instantiate chat LLM and the search agent
-llm = webuiLLM()
-chain = ConversationChain(llm=llm, memory=ConversationSummaryMemory(llm=llm,max_token_limit=500), verbose=False)
-
+@timeit
+def get_file_contents(filename):
+    try:
+        with open(filename, 'r') as f:
+            # It's assumed our file contains a single line,
+            # with our API key
+            return f.read().strip()
+    except FileNotFoundError:
+        print("'%s' file not found" % filename)
+        return "no_key"
+    
 #-------------------------------------------------------------------
 @timeit
-def prompting_llm(prompt,_chain):
+def get_remote_ip() -> str:
+    """Get remote ip."""
+    try:
+        ctx = get_script_run_ctx()
+        if ctx is None:
+            return None
+        session_info = runtime.get_instance().get_client(ctx.session_id)
+        if session_info is None:
+            return None
+    except Exception as e:
+        return None
+    return session_info.request.remote_ip
+    
+#-------------------------------------------------------------------
+@timeit
+def prompting_llm(prompt,_chain,llm_used):
     with st.spinner(text="Prompting LLM..."):
-        print('\n# '+datetime.datetime.now().astimezone().isoformat()+' =====================================================')
-        print("Prompt: "+prompt+"\n")
+        print('\n# '+datetime.datetime.now().astimezone().isoformat()+' from ['+get_remote_ip()+'] =====================================================')
+        print("Prompt ["+llm_used+"]: "+prompt+"\n")
         response = _chain.invoke(prompt).get("response")
-        print("-------------------\nResponse: "+response+"\n")
+        print("-------------------\nResponse ["+llm_used+"]: "+response+"\n")
         return response
 
 #-------------------------------------------------------------------
 @timeit
-def commands(prompt,last_prompt,last_response):
+def commands(prompt,last_prompt,last_response,llm_used,chain):
     match prompt.split(" ")[0]:
         case "/continue":
-            prompt = "Given this question: " + last_prompt + ", continue the following text you already started: " + last_response.rsplit("\n\n", 3)[0]
-            response = prompting_llm(prompt,chain)
+            prompt = "Given this question: " + last_prompt.strip() + ", continue the following text you already started: " + last_response.rsplit("\n\n", 3)[0]
+            response = prompting_llm(prompt,chain,llm_used).replace("\n","  \n")
             return response
         
         case "/history":
@@ -139,8 +153,13 @@ def commands(prompt,last_prompt,last_response):
             else:
                 return "Model not in the list. Check the list with the /list command."
             
+        case "/recall":
+            return "Prompt: _"+last_prompt+"_  \n  \nResponse: "+last_response
+
         case "/repeat":
-            return last_response
+            prompt = last_prompt.strip()
+            response = prompting_llm(prompt,chain,llm_used).replace("\n","  \n")
+            return response
         
         case "/stop":
             headers = {'Accept': 'application/json'}
@@ -152,59 +171,101 @@ def commands(prompt,last_prompt,last_response):
                 return "Stop command failed. Sometimes the LLM API becomes busy while generating text..."
             
         case "/help":
-            return "Comand list available: /continue, /history, /list, /model, /repeat, /stop, /help"
+            return "Comand list available: /continue, /history, /list, /load, /model, /recall, /repeat, /stop, /help"
 
 #-------------------------------------------------------------------
-# Initialize chat history
-if "messages" not in st.session_state:
-    st.session_state.messages = []
-if "history" not in st.session_state:
-    st.session_state.history = []
-else:
-    chain.memory = st.session_state.history
-if "last_response" not in st.session_state:
-    st.session_state.last_response = ""
-    last_response = ""
-else:
-    last_response = st.session_state.last_response
-if "last_prompt" not in st.session_state:
-    st.session_state.last_prompt = ""
-    last_prompt = ""
-else:
-    last_prompt = st.session_state.last_prompt
-    
-# Display chat messages from history on app rerun
-for message in st.session_state.messages:
-    with st.chat_message(message["role"]):
-        st.markdown(message["content"])
+def main():
 
-st.divider()
+    # Main page setup
+    st.set_page_config(page_title="LLM Wrapper", layout="wide")
+    st.header("This is a LLM Wrapper 💬")
+    st.info('Select a page on the side menu or use the chat below.', icon="📄")
+    with st.expander("Advanced options"):
+        llm_selection = st.checkbox("Use OpenAI API instead of local LLM - [Faster, but it costs me a little money]")
+    with st.sidebar.success("Choose a page above"):
+        st.sidebar.markdown(
+        f"""
+        <style>
+        [data-testid='stSidebarNav'] > ul {{
+            min-height: 40vh;
+        }} 
+        </style>
+        """,
+        unsafe_allow_html=True,)
 
-# React to user input
-if prompt := st.chat_input("What is up?"):
-    # Display user message in chat message container
-    st.chat_message("user").markdown(prompt)
-    # Add user message to chat history
-    st.session_state.messages.append({"role": "user", "content": prompt})
-    
-    if prompt.startswith("/"):
-        response = commands(prompt,last_prompt,last_response)
-        # Display assistant response in chat message container
-        with st.chat_message("assistant",avatar="🔮"):
-            st.markdown(response)
+    #-------------------------------------------------------------------
+    #Instantiate chat LLM and the search agent
+    llm_local = webuiLLM()
+    OPENAI_API_KEY = get_file_contents(apikeyfile)
+    llm_openai = OpenAI(openai_api_key=OPENAI_API_KEY,model='gpt-3.5-turbo-instruct')
+
+    # Load question answering chain
+    chain_local = ConversationChain(llm=llm_local, memory=ConversationSummaryMemory(llm=llm_local,max_token_limit=500), verbose=False)
+    chain_openai = ConversationChain(llm=llm_openai, memory=ConversationSummaryMemory(llm=llm_openai,max_token_limit=500), verbose=False)
+    chain = chain_local
+    llm_used = "local"
+        
+    #-------------------------------------------------------------------
+    # Initialize chat history
+    if "messages" not in st.session_state:
+        st.session_state.messages = []
+    if "history" not in st.session_state:
+        st.session_state.history = []
     else:
-        response = prompting_llm(prompt,chain)
-        # Display assistant response in chat message container
-        with st.chat_message("assistant"):
-            st.markdown(response)
-       
-    # Add assistant response to chat history
-    st.session_state.messages.append({"role": "assistant", "content": response})
+        chain.memory = st.session_state.history
+    if "last_response" not in st.session_state:
+        st.session_state.last_response = ""
+        last_response = ""
+    else:
+        last_response = st.session_state.last_response
+    if "last_prompt" not in st.session_state:
+        st.session_state.last_prompt = ""
+        last_prompt = ""
+    else:
+        last_prompt = st.session_state.last_prompt
+        
+    # Display chat messages from history on app rerun
+    for message in st.session_state.messages:
+        with st.chat_message(message["role"]):
+            st.markdown(message["content"])
 
-# Save chat history buffer to the session
-try:
-    st.session_state.history = chain.memory
-    st.session_state.last_prompt = prompt
-    st.session_state.last_response = response
-except:
-    pass
+    st.divider()
+
+    if llm_selection:
+        chain = chain_openai
+        llm_used = "openai"
+        
+    # React to user input
+    if prompt := st.chat_input("What is up?"):
+        # Display user message in chat message container
+        st.chat_message("user").markdown(prompt)
+        # Add user message to chat history
+        st.session_state.messages.append({"role": "user", "content": prompt})
+        
+        if prompt.startswith("/"):
+            response = commands(prompt,last_prompt,last_response,llm_used,chain).replace("\n","  \n")
+            # Display assistant response in chat message container
+            with st.chat_message("assistant",avatar="🔮"):
+                st.markdown(response)
+        else:
+            response = prompting_llm(prompt,chain,llm_used)
+            # Display assistant response in chat message container
+            with st.chat_message("assistant"):
+                st.markdown(response)
+        
+        # Add assistant response to chat history
+        st.session_state.messages.append({"role": "assistant", "content": response})
+
+    # Save chat history buffer to the session
+    try:
+        st.session_state.history = chain.memory
+        st.session_state.last_response = response
+        if not prompt.startswith("/"):
+            st.session_state.last_prompt = prompt
+    except:
+        pass
+    
+#-------------------------------------------------------------------
+
+if __name__ == "__main__":
+    main() 

@@ -2,6 +2,7 @@ bs4==0.0.2
 langchain==0.1.8
 pydantic==2.6.1
 PyPDF2==3.0.1
+pypdf=4.1.0
 qdrant-client==1.7.3
 sentence-transformers==2.2.2 
 streamlit==1.31.1
