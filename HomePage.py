@@ -81,7 +81,7 @@ def get_file_contents(filename):
             # with our API key
             return f.read().strip()
     except FileNotFoundError:
-        print("'%s' file not found" % filename)
+        print("OpenAI API key not found - This API won't be available")
         return "no_key"
     
 #-------------------------------------------------------------------
@@ -176,24 +176,6 @@ def commands(prompt,last_prompt,last_response,llm_used,chain):
 #-------------------------------------------------------------------
 def main():
 
-    # Main page setup
-    st.set_page_config(page_title="LLM Wrapper", layout="wide")
-    st.header("This is a LLM Wrapper 💬")
-    st.info('Select a page on the side menu or use the chat below.', icon="📄")
-    with st.expander("Advanced options"):
-        llm_selection = st.checkbox("Use OpenAI API instead of local LLM - [Faster, but it costs me a little money]")
-    with st.sidebar.success("Choose a page above"):
-        st.sidebar.markdown(
-        f"""
-        <style>
-        [data-testid='stSidebarNav'] > ul {{
-            min-height: 40vh;
-        }} 
-        </style>
-        """,
-        unsafe_allow_html=True,)
-
-    #-------------------------------------------------------------------
     #Instantiate chat LLM and the search agent
     llm_local = webuiLLM()
     OPENAI_API_KEY = get_file_contents(apikeyfile)
@@ -204,7 +186,28 @@ def main():
     chain_openai = ConversationChain(llm=llm_openai, memory=ConversationSummaryMemory(llm=llm_openai,max_token_limit=500), verbose=False)
     chain = chain_local
     llm_used = "local"
-        
+    
+    # Main page setup
+    st.set_page_config(page_title="LLM Wrapper", layout="wide")
+    st.header("This is a LLM Wrapper 💬")
+    st.info('Select a page on the side menu or use the chat below.', icon="📄")
+    if get_file_contents(apikeyfile) != 'no_key':
+        with st.expander("Advanced options"):
+            llm_selection = st.checkbox("Use OpenAI API instead of local LLM - [Faster, but it costs me a little money]")
+            if llm_selection:
+                chain = chain_openai
+                llm_used = "openai"
+    with st.sidebar.success("Choose a page above"):
+        st.sidebar.markdown(
+        f"""
+        <style>
+        [data-testid='stSidebarNav'] > ul {{
+            min-height: 40vh;
+        }} 
+        </style>
+        """,
+        unsafe_allow_html=True,)
+       
     #-------------------------------------------------------------------
     # Initialize chat history
     if "messages" not in st.session_state:
@@ -230,10 +233,6 @@ def main():
             st.markdown(message["content"])
 
     st.divider()
-
-    if llm_selection:
-        chain = chain_openai
-        llm_used = "openai"
         
     # React to user input
     if prompt := st.chat_input("What is up?"):
