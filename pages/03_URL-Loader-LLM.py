@@ -1,28 +1,46 @@
-import streamlit as st
-from streamlit import runtime
-from streamlit.runtime.scriptrunner import get_script_run_ctx
+#----------------------------------------------------------------------------------------------------
+try:
+    import streamlit as st
+    from streamlit import runtime
+    from streamlit.runtime.scriptrunner import get_script_run_ctx
 
-from bs4 import BeautifulSoup
-from io import StringIO
-from typing import Optional, List, Mapping, Any
-import datetime
-import functools
-import re
-import requests
-import textwrap
+    from bs4 import BeautifulSoup
+    from io import StringIO
+    from typing import Optional, List, Mapping, Any
+    import datetime
+    import functools
+    import logging
+    import re
+    import requests
+    import sys
+    import textwrap
 
-import langchain
-from langchain.chains import LLMChain
-from langchain.chains.question_answering import load_qa_chain
-from langchain.llms.base import LLM
-from langchain.text_splitter import CharacterTextSplitter
-from langchain_community.embeddings import HuggingFaceEmbeddings as SentenceTransformerEmbeddings
-from langchain_community.tools import WikipediaQueryRun
-from langchain_community.utilities import WikipediaAPIWrapper
-from langchain_community.vectorstores import Qdrant
-from langchain_core.prompts import PromptTemplate
-from langchain_openai import OpenAI
-from langchain_openai import OpenAIEmbeddings
+    import langchain
+    from langchain.chains import LLMChain
+    from langchain.chains.question_answering import load_qa_chain
+    from langchain.llms.base import LLM
+    from langchain.text_splitter import CharacterTextSplitter
+    from langchain_community.embeddings import HuggingFaceEmbeddings as SentenceTransformerEmbeddings
+    from langchain_community.tools import WikipediaQueryRun
+    from langchain_community.utilities import WikipediaAPIWrapper
+    from langchain_community.vectorstores import Qdrant
+    from langchain_core.prompts import PromptTemplate
+    from langchain_openai import OpenAI
+    from langchain_openai import OpenAIEmbeddings
+except:
+    print(sys.exc_info())
+
+#-------------------------------------------------------------------
+langchain.verbose = False
+apikeyfile = '/mnt/sdc1/llm_text_apps/openai_api.txt'
+log_filename = 'logs/llm_wrapper.log'
+page_name = '03_URL-Loader-LLM'
+
+logging.basicConfig(
+filename=log_filename,
+format='%(asctime)s %(levelname)-2s %(message)s',
+level=logging.INFO,
+datefmt='%Y-%m-%d %H:%M:%S')
 
 #-------------------------------------------------------------------
 class webuiLLM(LLM):
@@ -65,22 +83,18 @@ class webuiLLM(LLM):
         }
     
 #-------------------------------------------------------------------
-langchain.verbose = False
-apikeyfile = '/mnt/sdc1/llm_text_apps/openai_api.txt'
-#-------------------------------------------------------------------
 def timeit(func):
     @functools.wraps(func)
     def new_func(*args, **kwargs):
         start_time = datetime.datetime.now()
         result = func(*args, **kwargs)
         elapsed_time = datetime.datetime.now() - start_time
-        print('function [{}] finished in {} ms'.format(
+        logging.info("["+page_name+"][function]["+get_remote_ip()+"][{}] finished in {} ms".format(
             func.__name__, str(elapsed_time)))
         return result
     return new_func
 
 #-------------------------------------------------------------------
-@timeit
 def get_file_contents(filename):
     try:
         with open(filename, 'r') as f:
@@ -88,11 +102,10 @@ def get_file_contents(filename):
             # with our API key
             return f.read().strip()
     except FileNotFoundError:
-        print("OpenAI API key not found - This API won't be available")
+        logging.warning("["+page_name+"][get_file_contents]["+get_remote_ip()+"] OpenAI API key not found - This API won't be available")
         return "no_key"
     
 #-------------------------------------------------------------------
-@timeit
 def get_remote_ip() -> str:
     """Get remote ip."""
     try:
@@ -103,7 +116,7 @@ def get_remote_ip() -> str:
         if session_info is None:
             return None
     except Exception as e:
-        return None
+        return "no_IP"
     return session_info.request.remote_ip
 
 #-------------------------------------------------------------------
@@ -159,31 +172,33 @@ def fetching_url(userinputquery,chunk_size,chunk_overlap):
 #-------------------------------------------------------------------
 @timeit
 def prompting_llm(user_question,_knowledge_base,_chain,k_value,llm_used):
-    with st.spinner(text="Prompting LLM..."):
-        doc_to_prompt = _knowledge_base.similarity_search(user_question, k=k_value)
-        docs_stats = _knowledge_base.similarity_search_with_score(user_question, k=k_value)
-        print('\n# '+datetime.datetime.now().astimezone().isoformat()+' from ['+get_remote_ip()+'] =====================================================')
-        print("Prompt ["+llm_used+"]: "+user_question+"\n")
-        for x in range(len(docs_stats)):
-            try:
-                print('# '+str(x)+' -------------------')
-                content, score = docs_stats[x]
-                print("Content: "+content.page_content)
-                print("\nScore: "+str(score)+"\n")
-            except:
-                pass
-        # Calculating prompt (takes time and can optionally be removed)
-        prompt_len = _chain.prompt_length(docs=doc_to_prompt, question=user_question)
-        st.write(f"Prompt len: {prompt_len}")
-        # if prompt_len > llm.n_ctx:
-        #     st.write(
-        #         "Prompt length is more than n_ctx. This will likely fail. Increase model's context, reduce chunk's \
-        #             sizes or question length, or retrieve less number of docs."
-        #     )
-        # Grab and print response
-        response = _chain.invoke({"input_documents": doc_to_prompt, "question": user_question},return_only_outputs=True).get("output_text")
-        print("-------------------\nResponse ["+llm_used+"]:\n"+response+"\n")
-        return response
+    try:
+        with st.spinner(text="Prompting LLM..."):
+            doc_to_prompt = _knowledge_base.similarity_search(user_question, k=k_value)
+            docs_stats = _knowledge_base.similarity_search_with_score(user_question, k=k_value)
+            logging.info("["+page_name+"][Prompt]["+get_remote_ip()+"]["+llm_used+"]: "+user_question)
+            for x in range(len(docs_stats)):
+                try:
+                    content, score = docs_stats[x]
+                    logging.info("["+page_name+"][Chunk]["+get_remote_ip()+"]["+str(x)+"]["+str(score)+"]: "+content.page_content.replace("\n","\\n"))
+                except:
+                    pass
+            # Calculating prompt (takes time and can optionally be removed)
+            prompt_len = _chain.prompt_length(docs=doc_to_prompt, question=user_question)
+            st.write(f"Prompt len: {prompt_len}")
+            # if prompt_len > llm.n_ctx:
+            #     st.write(
+            #         "Prompt length is more than n_ctx. This will likely fail. Increase model's context, reduce chunk's \
+            #             sizes or question length, or retrieve less number of docs."
+            #     )
+            # Grab and print response
+            response = _chain.invoke({"input_documents": doc_to_prompt, "question": user_question},return_only_outputs=True).get("output_text")
+            logging.info("["+page_name+"][Response]["+get_remote_ip()+"]["+llm_used+"]: "+response.replace("\n","\\n").strip())
+            return response
+    except:
+        logging.warning("["+page_name+"][prompting_llm]["+get_remote_ip()+"]LLM could not be contacted")
+        st.error("LLM could not be contacted")
+        return "No response from LLM"
     
 #-------------------------------------------------------------------
 @timeit
@@ -258,7 +273,7 @@ def main():
             
         if user_question:
             response = prompting_llm("This is a page content, based on this text " + user_question.strip(),knowledge_base,chain,k_value,llm_used).replace("\n","  \n")
-            st.write("_"+user_question.strip()+"_")
+            st.write("Prompt: _"+user_question.strip()+"_")
             st.write(response)
             if chunk_display:
                 chunk_display_result = chunk_search(user_question.strip(),knowledge_base,k_value)
