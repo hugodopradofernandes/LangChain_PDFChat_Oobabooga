@@ -208,7 +208,7 @@ def main():
     st.set_page_config(page_title="LLM Wrapper", layout="wide")
     st.header("This is a LLM Wrapper 💬")
     st.info('Select a page on the side menu or use the chat below.', icon="📄")
-    if get_file_contents(apikeyfile) != 'no_key':
+    if OPENAI_API_KEY != 'no_key':
         with st.expander("Advanced options"):
             llm_selection = st.checkbox("Use OpenAI API instead of local LLM - [Faster, but it costs me a little money]")
             if llm_selection:
