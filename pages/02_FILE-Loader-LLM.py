@@ -39,6 +39,11 @@ format='%(asctime)s %(levelname)-2s %(message)s',
 level=logging.INFO,
 datefmt='%Y-%m-%d %H:%M:%S')
 
+# Silence CharacterTextSplitter loggers
+for log_name, log_obj in logging.Logger.manager.loggerDict.items():
+     if log_name != 'CharacterTextSplitter':
+          log_obj.disabled = True
+
 #-------------------------------------------------------------------
 class webuiLLM(LLM):
     @property
