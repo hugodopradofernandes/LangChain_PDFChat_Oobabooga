@@ -1,20 +1,38 @@
-import streamlit as st
-from streamlit import runtime
-from streamlit.runtime.scriptrunner import get_script_run_ctx
+#----------------------------------------------------------------------------------------------------
+try:
+    import streamlit as st
+    from streamlit import runtime
+    from streamlit.runtime.scriptrunner import get_script_run_ctx
 
-from io import StringIO
-from typing import Optional, List, Mapping, Any
-import datetime
-import functools
-import requests
+    from io import StringIO
+    from typing import Optional, List, Mapping, Any
+    import datetime
+    import functools
+    import logging
+    import requests
+    import sys
 
-import langchain
-from langchain.chains import ConversationChain
-from langchain.chains.conversation.memory import ConversationSummaryMemory
-from langchain.llms.base import LLM
-from langchain_core.prompts import PromptTemplate
-from langchain_openai import OpenAI
-from langchain_openai import OpenAIEmbeddings
+    import langchain
+    from langchain.chains import ConversationChain
+    from langchain.chains.conversation.memory import ConversationSummaryMemory
+    from langchain.llms.base import LLM
+    from langchain_core.prompts import PromptTemplate
+    from langchain_openai import OpenAI
+    from langchain_openai import OpenAIEmbeddings
+except:
+    print(sys.exc_info())
+
+#-------------------------------------------------------------------
+langchain.verbose = False
+apikeyfile = '/mnt/sdc1/llm_text_apps/openai_api.txt'
+log_filename = 'logs/llm_wrapper.log'
+page_name = 'HomePage'
+
+logging.basicConfig(
+filename=log_filename,
+format='%(asctime)s %(levelname)-2s %(message)s',
+level=logging.INFO,
+datefmt='%Y-%m-%d %H:%M:%S')
 
 #-------------------------------------------------------------------
 class webuiLLM(LLM):
@@ -58,22 +76,18 @@ class webuiLLM(LLM):
         }
 
 #-------------------------------------------------------------------
-langchain.verbose = False
-apikeyfile = '/mnt/sdc1/llm_text_apps/openai_api.txt'
-#-------------------------------------------------------------------
 def timeit(func):
     @functools.wraps(func)
     def new_func(*args, **kwargs):
         start_time = datetime.datetime.now()
         result = func(*args, **kwargs)
         elapsed_time = datetime.datetime.now() - start_time
-        print('function [{}] finished in {} ms'.format(
+        logging.info("["+page_name+"][function]["+get_remote_ip()+"][{}] finished in {} ms".format(
             func.__name__, str(elapsed_time)))
         return result
     return new_func
 
 #-------------------------------------------------------------------
-@timeit
 def get_file_contents(filename):
     try:
         with open(filename, 'r') as f:
@@ -81,11 +95,10 @@ def get_file_contents(filename):
             # with our API key
             return f.read().strip()
     except FileNotFoundError:
-        print("OpenAI API key not found - This API won't be available")
+        logging.warning("["+page_name+"][get_file_contents]["+get_remote_ip()+"] OpenAI API key not found - This API won't be available")
         return "no_key"
     
 #-------------------------------------------------------------------
-@timeit
 def get_remote_ip() -> str:
     """Get remote ip."""
     try:
@@ -96,18 +109,22 @@ def get_remote_ip() -> str:
         if session_info is None:
             return None
     except Exception as e:
-        return None
+        return "no_IP"
     return session_info.request.remote_ip
     
 #-------------------------------------------------------------------
 @timeit
 def prompting_llm(prompt,_chain,llm_used):
-    with st.spinner(text="Prompting LLM..."):
-        print('\n# '+datetime.datetime.now().astimezone().isoformat()+' from ['+get_remote_ip()+'] =====================================================')
-        print("Prompt ["+llm_used+"]: "+prompt+"\n")
-        response = _chain.invoke(prompt).get("response")
-        print("-------------------\nResponse ["+llm_used+"]: "+response+"\n")
-        return response
+    try:
+        with st.spinner(text="Prompting LLM..."):
+            logging.info("["+page_name+"][Prompt]["+get_remote_ip()+"]["+llm_used+"]: "+prompt)
+            response = _chain.invoke(prompt).get("response").replace("\n","  \n")
+            logging.info("["+page_name+"][Response]["+get_remote_ip()+"]["+llm_used+"]: "+response.replace("\n","\\n").strip())
+            return response
+    except:
+        logging.warning("["+page_name+"][prompting_llm]["+get_remote_ip()+"]LLM could not be contacted")
+        st.error("LLM could not be contacted")
+        return "No response from LLM"
 
 #-------------------------------------------------------------------
 @timeit
@@ -185,7 +202,7 @@ def main():
     chain_local = ConversationChain(llm=llm_local, memory=ConversationSummaryMemory(llm=llm_local,max_token_limit=500), verbose=False)
     chain_openai = ConversationChain(llm=llm_openai, memory=ConversationSummaryMemory(llm=llm_openai,max_token_limit=500), verbose=False)
     chain = chain_local
-    llm_used = "local"
+    llm_used = "local-llm"
     
     # Main page setup
     st.set_page_config(page_title="LLM Wrapper", layout="wide")
@@ -196,7 +213,7 @@ def main():
             llm_selection = st.checkbox("Use OpenAI API instead of local LLM - [Faster, but it costs me a little money]")
             if llm_selection:
                 chain = chain_openai
-                llm_used = "openai"
+                llm_used = "openai-llm"
     with st.sidebar.success("Choose a page above"):
         st.sidebar.markdown(
         f"""
@@ -242,12 +259,12 @@ def main():
         st.session_state.messages.append({"role": "user", "content": prompt})
         
         if prompt.startswith("/"):
-            response = commands(prompt,last_prompt,last_response,llm_used,chain).replace("\n","  \n")
+            response = commands(prompt.strip(),last_prompt,last_response,llm_used,chain).replace("\n","  \n")
             # Display assistant response in chat message container
             with st.chat_message("assistant",avatar="🔮"):
                 st.markdown(response)
         else:
-            response = prompting_llm(prompt,chain,llm_used)
+            response = prompting_llm(prompt.strip(),chain,llm_used)
             # Display assistant response in chat message container
             with st.chat_message("assistant"):
                 st.markdown(response)
