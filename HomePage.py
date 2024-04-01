@@ -204,6 +204,26 @@ def main():
     chain = chain_local
     llm_used = "local-llm"
     
+#-------------------------------------------------------------------
+    # Initialize chat history
+    if "messages" not in st.session_state:
+        st.session_state.messages = []
+    if "history" not in st.session_state:
+        st.session_state.history = []
+    #else:
+        #chain.memory = st.session_state.history
+    if "last_response" not in st.session_state:
+        st.session_state.last_response = ""
+        last_response = ""
+    else:
+        last_response = st.session_state.last_response
+    if "last_prompt" not in st.session_state:
+        st.session_state.last_prompt = ""
+        last_prompt = ""
+    else:
+        last_prompt = st.session_state.last_prompt
+        
+#-------------------------------------------------------------------
     # Main page setup
     st.set_page_config(page_title="LLM Wrapper", layout="wide")
     st.header("This is a LLM Wrapper 💬")
@@ -224,33 +244,15 @@ def main():
         </style>
         """,
         unsafe_allow_html=True,)
-    
+
     st.divider()
-    
-    #-------------------------------------------------------------------
-    # Initialize chat history
-    if "messages" not in st.session_state:
-        st.session_state.messages = []
-    if "history" not in st.session_state:
-        st.session_state.history = []
-    else:
-        chain.memory = st.session_state.history
-    if "last_response" not in st.session_state:
-        st.session_state.last_response = ""
-        last_response = ""
-    else:
-        last_response = st.session_state.last_response
-    if "last_prompt" not in st.session_state:
-        st.session_state.last_prompt = ""
-        last_prompt = ""
-    else:
-        last_prompt = st.session_state.last_prompt
-        
+
+#-------------------------------------------------------------------
     # Display chat messages from history on app rerun
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
-        
+            
     # React to user input
     if prompt := st.chat_input("What is up?"):
         # Display user message in chat message container
