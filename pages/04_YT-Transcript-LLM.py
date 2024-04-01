@@ -4,7 +4,6 @@ try:
     from streamlit import runtime
     from streamlit.runtime.scriptrunner import get_script_run_ctx
 
-    from io import StringIO
     from typing import Optional, List, Mapping, Any
     import datetime
     import functools
@@ -15,18 +14,14 @@ try:
     import textwrap
 
     import langchain
-    from langchain.chains import LLMChain
     from langchain.chains.question_answering import load_qa_chain
     from langchain.llms.base import LLM
     from langchain.text_splitter import CharacterTextSplitter
     from langchain_community.embeddings import HuggingFaceEmbeddings as SentenceTransformerEmbeddings
     from langchain_community.vectorstores import Qdrant
-    from langchain_core.prompts import PromptTemplate
     from langchain_openai import OpenAI
-    from langchain_openai import OpenAIEmbeddings
 
     from youtube_transcript_api import YouTubeTranscriptApi
-    from youtube_transcript_api.formatters import Formatter
     from youtube_transcript_api.formatters import TextFormatter
 except:
     print(sys.exc_info())
@@ -136,9 +131,6 @@ def fetching_youtubeid(youtubeid):
 def fetching_transcript(youtubeid,chunk_size,chunk_overlap):
     youtubeid = fetching_youtubeid(youtubeid)
 
-    # retrieve the available transcripts
-    #transcript_list = YouTubeTranscriptApi.list_transcripts(youtubeid)
-
     transcript = YouTubeTranscriptApi.get_transcript(youtubeid, languages=['pt', 'en'])
     
     formatter = TextFormatter()
@@ -196,7 +188,6 @@ def prompting_llm(user_question,_knowledge_base,_chain,k_value,llm_used):
 @timeit
 def chunk_search(user_question,_knowledge_base,k_value):
     with st.spinner(text="Prompting LLM..."):
-        doc_to_prompt = _knowledge_base.similarity_search(user_question, k=k_value)
         docs_stats = _knowledge_base.similarity_search_with_score(user_question, k=k_value)
         result = '  \n '+datetime.datetime.now().astimezone().isoformat()
         result = result + "  \nPrompt: "+user_question+ "  \n"
