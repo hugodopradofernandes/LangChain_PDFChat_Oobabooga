@@ -7,7 +7,9 @@ try:
     from typing import Optional, List, Mapping, Any
     import datetime
     import functools
+    import hmac
     import logging
+    import os.path
     import re
     import requests
     import sys
@@ -40,6 +42,49 @@ datefmt='%Y-%m-%d %H:%M:%S')
 
 logging.getLogger('CharacterTextSplitter').disabled = True
 
+#-------------------------------------------------------------------
+def get_remote_ip() -> str:
+    """Get remote ip."""
+    try:
+        ctx = get_script_run_ctx()
+        if ctx is None:
+            return None
+        session_info = runtime.get_instance().get_client(ctx.session_id)
+        if session_info is None:
+            return None
+    except Exception as e:
+        return "no_IP"
+    return session_info.request.remote_ip
+
+#-------------------------------------------------------------------
+def check_password():
+    """Returns `True` if the user had the correct password."""
+
+    def password_entered():
+        """Checks whether a password entered by the user is correct."""
+        if hmac.compare_digest(st.session_state["password"], st.secrets["password"]):
+            st.session_state["password_correct"] = True
+            del st.session_state["password"]  # Don't store the password.
+        else:
+            st.session_state["password_correct"] = False
+
+    # Return True if the password is validated.
+    if st.session_state.get("password_correct", False):
+        return True
+
+    # Show input for password.
+    st.text_input(
+        "Password", type="password", on_change=password_entered, key="password"
+    )
+    if "password_correct" in st.session_state:
+        logging.warning("["+page_name+"][check_password]["+get_remote_ip()+"] Password incorrect")
+        st.error("😕 Password incorrect")
+    return False
+
+if os.path.isfile(".streamlit/secrets.toml"):
+    if not check_password():
+        st.stop()  # Do not continue if check_password is not True.
+        
 #-------------------------------------------------------------------
 class webuiLLM(LLM):
     @property
@@ -103,20 +148,6 @@ def get_file_contents(filename):
         logging.warning("["+page_name+"][get_file_contents]["+get_remote_ip()+"] OpenAI API key not found - This API won't be available")
         return "no_key"
     
-#-------------------------------------------------------------------
-def get_remote_ip() -> str:
-    """Get remote ip."""
-    try:
-        ctx = get_script_run_ctx()
-        if ctx is None:
-            return None
-        session_info = runtime.get_instance().get_client(ctx.session_id)
-        if session_info is None:
-            return None
-    except Exception as e:
-        return "no_IP"
-    return session_info.request.remote_ip
-
 #-------------------------------------------------------------------
 @timeit
 def fetching_youtubeid(youtubeid):
