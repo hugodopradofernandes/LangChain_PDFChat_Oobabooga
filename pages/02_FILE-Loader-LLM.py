@@ -95,7 +95,7 @@ class webuiLLM(LLM):
             "http://127.0.0.1:5000/v1/completions",
             json={
                 "prompt": prompt,
-                "max_tokens": 512,
+                "max_tokens": 1024,
                 "do_sample": "false",
                 "temperature": 0.7,
                 "top_p": 0.1,
