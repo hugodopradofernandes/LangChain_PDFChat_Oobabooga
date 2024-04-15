@@ -11,6 +11,7 @@ try:
     import hmac
     import logging
     import os.path
+    import re
     import requests
     import sys
     import textwrap
@@ -67,6 +68,7 @@ def check_password():
 
     # Return True if the password is validated.
     if st.session_state.get("password_correct", False):
+        logging.info("["+page_name+"][check_password]["+get_remote_ip()+"] logged")
         return True
 
     # Show input for password.
@@ -177,8 +179,23 @@ def fetching_pdf(pdf,chunk_size,chunk_overlap):
 def prompting_llm(user_question,_knowledge_base,_chain,k_value,llm_used):
     try:
         with st.spinner(text="Prompting LLM..."):
-            doc_to_prompt = _knowledge_base.similarity_search(user_question, k=k_value)
-            docs_stats = _knowledge_base.similarity_search_with_score(user_question, k=k_value)
+            re_pattern = '\[(.*)\]'
+            brackets = re.compile(re_pattern)
+            
+            try:
+                prompt_brackets = brackets.search(user_question).group(0).replace('[','').replace(']','')
+            except:
+                prompt_brackets = None
+                
+            if prompt_brackets is None:
+                prompt_brackets = user_question
+            else:
+                user_question = user_question.replace('[','').replace(']','')
+                logging.info("["+page_name+"][Prompt]["+get_remote_ip()+"]["+llm_used+"]: Searching only '"+prompt_brackets+"'")
+
+            doc_to_prompt = _knowledge_base.similarity_search(prompt_brackets, k=k_value)
+            docs_stats = _knowledge_base.similarity_search_with_score(prompt_brackets, k=k_value)
+            
             logging.info("["+page_name+"][Prompt]["+get_remote_ip()+"]["+llm_used+"]: "+user_question)
             for x in range(len(docs_stats)):
                 try:
@@ -207,6 +224,17 @@ def prompting_llm(user_question,_knowledge_base,_chain,k_value,llm_used):
 @timeit
 def chunk_search(user_question,_knowledge_base,k_value):
     with st.spinner(text="Prompting LLM..."):
+        re_pattern = '\[(.*)\]'
+        brackets = re.compile(re_pattern)
+        
+        try:
+            prompt_brackets = brackets.search(user_question).group(0).replace('[','').replace(']','')
+        except:
+            prompt_brackets = None
+            
+        if prompt_brackets is None:
+            prompt_brackets = user_question
+            
         docs_stats = _knowledge_base.similarity_search_with_score(user_question, k=k_value)
         result = '  \n '+datetime.datetime.now().astimezone().isoformat()
         result = result + "  \nPrompt: "+user_question+ "  \n"
@@ -307,7 +335,7 @@ def main():
         
     if pdf:
         knowledge_base = fetching_pdf(pdf,chunk_size,chunk_overlap)
-        user_question = st.chat_input("Ask a question about your PDF:")
+        user_question = st.chat_input("Ask a question about your PDF. You can use [] to narrow the dataset search.")
 
         if user_question:
             if user_question.startswith("/"):

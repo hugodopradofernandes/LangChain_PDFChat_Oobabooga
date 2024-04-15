@@ -70,6 +70,7 @@ def check_password():
 
     # Return True if the password is validated.
     if st.session_state.get("password_correct", False):
+        logging.info("["+page_name+"][check_password]["+get_remote_ip()+"] logged")
         return True
 
     # Show input for password.
@@ -189,8 +190,23 @@ def fetching_transcript(youtubeid,chunk_size,chunk_overlap):
 def prompting_llm(user_question,_knowledge_base,_chain,k_value,llm_used):
     try:
         with st.spinner(text="Prompting LLM..."):
-            doc_to_prompt = _knowledge_base.similarity_search(user_question, k=k_value)
-            docs_stats = _knowledge_base.similarity_search_with_score(user_question, k=k_value)
+            re_pattern = '\[(.*)\]'
+            brackets = re.compile(re_pattern)
+            
+            try:
+                prompt_brackets = brackets.search(user_question).group(0).replace('[','').replace(']','')
+            except:
+                prompt_brackets = None
+                
+            if prompt_brackets is None:
+                prompt_brackets = user_question
+            else:
+                user_question = user_question.replace('[','').replace(']','')
+                logging.info("["+page_name+"][Prompt]["+get_remote_ip()+"]["+llm_used+"]: Searching only '"+prompt_brackets+"'")
+
+            doc_to_prompt = _knowledge_base.similarity_search(prompt_brackets, k=k_value)
+            docs_stats = _knowledge_base.similarity_search_with_score(prompt_brackets, k=k_value)
+            
             logging.info("["+page_name+"][Prompt]["+get_remote_ip()+"]["+llm_used+"]: "+user_question)
             for x in range(len(docs_stats)):
                 try:
@@ -219,6 +235,17 @@ def prompting_llm(user_question,_knowledge_base,_chain,k_value,llm_used):
 @timeit
 def chunk_search(user_question,_knowledge_base,k_value):
     with st.spinner(text="Prompting LLM..."):
+        re_pattern = '\[(.*)\]'
+        brackets = re.compile(re_pattern)
+        
+        try:
+            prompt_brackets = brackets.search(user_question).group(0).replace('[','').replace(']','')
+        except:
+            prompt_brackets = None
+            
+        if prompt_brackets is None:
+            prompt_brackets = user_question
+            
         docs_stats = _knowledge_base.similarity_search_with_score(user_question, k=k_value)
         result = '  \n '+datetime.datetime.now().astimezone().isoformat()
         result = result + "  \nPrompt: "+user_question+ "  \n"
@@ -277,7 +304,7 @@ def main():
         
     if youtubeid:
         knowledge_base = fetching_transcript(youtubeid,chunk_size,chunk_overlap)
-        user_question = st.text_input("Ask a question about the Youtube video:")
+        user_question = st.text_input("Ask a question about the Youtube video. You can use [] to narrow the dataset search.")
         
         promptoption = st.selectbox(
                         '...or select a prompt templates',
