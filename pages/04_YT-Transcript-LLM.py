@@ -305,6 +305,16 @@ def main():
             if llm_selection:
                 chain = chain_openai
                 llm_used = "openai"
+    with st.sidebar.success("Choose a page above"):
+        st.sidebar.markdown(
+        f"""
+        <style>
+        [data-testid='stSidebarNav'] > ul {{
+            min-height: 40vh;
+        }} 
+        </style>
+        """,
+        unsafe_allow_html=True,)
         
     if youtubeid:
         knowledge_base = fetching_transcript(youtubeid,chunk_size,chunk_overlap)

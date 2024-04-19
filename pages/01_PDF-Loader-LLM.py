@@ -95,7 +95,7 @@ class webuiLLM(LLM):
             "http://127.0.0.1:5000/v1/completions",
             json={
                 "prompt": prompt,
-                "max_tokens": 1024,
+                "max_tokens": 2048,
                 "do_sample": "false",
                 "temperature": 0.7,
                 "top_p": 0.1,
@@ -332,6 +332,16 @@ def main():
             if llm_selection:
                 chain = chain_openai
                 llm_used = "openai"
+    with st.sidebar.success("Choose a page above"):
+        st.sidebar.markdown(
+        f"""
+        <style>
+        [data-testid='stSidebarNav'] > ul {{
+            min-height: 40vh;
+        }} 
+        </style>
+        """,
+        unsafe_allow_html=True,)
         
     if pdf:
         knowledge_base = fetching_pdf(pdf,chunk_size,chunk_overlap)
