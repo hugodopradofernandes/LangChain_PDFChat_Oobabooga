@@ -15,11 +15,9 @@ Items added from forked repo, which I used as a starting point to learning how t
 - Added a chat page, with history and context, using _ConversationSummaryMemory_.
 - Many UI improvements, pratically a new app.
 
-![screenshot](https://github.com/hugodopradofernandes/LangChain_Wrapper_LocalLLM/blob/main/screenshots/Screenshot_20240222_051136.png)
-![screenshot](https://github.com/hugodopradofernandes/LangChain_Wrapper_LocalLLM/blob/main/screenshots/Screenshot_20240222_051021.png)
-![screenshot](https://github.com/hugodopradofernandes/LangChain_Wrapper_LocalLLM/blob/main/screenshots/Screenshot_20240222_050925.png)
-![screenshot](https://github.com/hugodopradofernandes/LangChain_Wrapper_LocalLLM/blob/main/screenshots/Screenshot_20240222_050737.png)
-![screenshot](https://github.com/hugodopradofernandes/Local-LLM-LangChain-Wrapper/blob/main/screenshots/Screenshot_20240223_020138.png)
+![screenshot](https://github.com/hugodopradofernandes/LangChain_Wrapper_LocalLLM/blob/main/screenshots/Screenshot_20240419_175425.png)
+![screenshot](https://github.com/hugodopradofernandes/Local-LLM-LangChain-Wrapper/blob/main/screenshots/Screenshot_20240419_174526.png)
+![screenshot](https://github.com/hugodopradofernandes/LangChain_Wrapper_LocalLLM/blob/main/screenshots/Screenshot_20240419_174647.png)
 
 # To install
 
