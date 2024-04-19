@@ -240,7 +240,7 @@ def main():
     
 #-------------------------------------------------------------------
     # Initialize chat history
-    if "messages" not in st.session_state:
+    if "messages_coder" not in st.session_state:
         st.session_state.messages_coder = []
     if "history_coder" not in st.session_state:
         st.session_state.history_coder = []
