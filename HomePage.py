@@ -66,6 +66,7 @@ def check_password():
 
     # Return True if the password is validated.
     if st.session_state.get("password_correct", False):
+        logging.info("["+page_name+"][check_password]["+get_remote_ip()+"] logged")
         return True
 
     # Show input for password.
@@ -92,7 +93,7 @@ class webuiLLM(LLM):
             "http://127.0.0.1:5000/v1/completions",
             json={
                 "prompt": prompt,
-                "max_tokens": 512,
+                "max_tokens": 1024,
                 "do_sample": "false",
                 "temperature": 0.7,
                 "top_p": 0.1,
@@ -243,8 +244,8 @@ def main():
         st.session_state.messages = []
     if "history" not in st.session_state:
         st.session_state.history = []
-    #else:
-        #chain.memory = st.session_state.history
+    else:
+        chain.memory = st.session_state.history
     if "last_response" not in st.session_state:
         st.session_state.last_response = ""
         last_response = ""
@@ -284,7 +285,7 @@ def main():
     # Display chat messages from history on app rerun
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
-            st.markdown(message["content"])
+            st.write(message["content"])
             
     # React to user input
     if prompt := st.chat_input("What is up?"):
@@ -297,12 +298,12 @@ def main():
             response = commands(prompt.strip(),last_prompt,last_response,llm_used,chain).replace("\n","  \n")
             # Display assistant response in chat message container
             with st.chat_message("assistant",avatar="🔮"):
-                st.markdown(response)
+                st.write(response)
         else:
             response = prompting_llm(prompt.strip(),chain,llm_used)
             # Display assistant response in chat message container
             with st.chat_message("assistant"):
-                st.markdown(response)
+                st.write(response)
         
         # Add assistant response to chat history
         st.session_state.messages.append({"role": "assistant", "content": response})
