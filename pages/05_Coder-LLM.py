@@ -283,7 +283,7 @@ def main():
 
 #-------------------------------------------------------------------
     # React to user input
-    if prompt := st.chat_input("What is up?"):
+    if prompt := st.chat_input("Ask for a code"):
         # Display user message in chat message container
         st.chat_message("user").markdown(prompt)
         # Add user message to chat history
