@@ -242,16 +242,16 @@ def main():
     # Initialize chat history
     if "messages" not in st.session_state:
         st.session_state.messages_coder = []
-    if "history" not in st.session_state:
+    if "history_coder" not in st.session_state:
         st.session_state.history_coder = []
     else:
         chain.memory = st.session_state.history_coder
-    if "last_response" not in st.session_state:
+    if "last_response_coder" not in st.session_state:
         st.session_state.last_response_coder = ""
         last_response = ""
     else:
         last_response = st.session_state.last_response_coder
-    if "last_prompt" not in st.session_state:
+    if "last_prompt_coder" not in st.session_state:
         st.session_state.last_prompt_coder = ""
         last_prompt = ""
     else:
@@ -295,7 +295,7 @@ def main():
             with st.chat_message("assistant",avatar="🔮"):
                 st.write(response)
         else:
-            response = prompting_llm("This is a system that returns computer language codes only.Anything that is not code can't be provided at all. Based on the following question, show the final code only, without any explanation, only the best and complete code option available: " + prompt.strip(),chain,llm_used).replace("\n","  \n")
+            response = prompting_llm("This is a system that returns computer language codes only. Anything that is not code can't be provided at all. Only computer language code. Based on the following question, show the final code only, without any explanation, only the best and complete code option available. Don't explain the code: " + prompt.strip(),chain,llm_used).replace("\n","  \n")
             # Display assistant response in chat message container
             with st.chat_message("assistant"):
                 st.code(response)
