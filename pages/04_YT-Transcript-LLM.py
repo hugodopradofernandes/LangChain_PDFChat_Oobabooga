@@ -97,7 +97,7 @@ class webuiLLM(LLM):
             "http://127.0.0.1:5000/v1/completions",
             json={
                 "prompt": prompt,
-                "max_tokens": 1024,
+                "max_tokens": 2048,
                 "do_sample": "false",
                 "temperature": 0.7,
                 "top_p": 0.1,
@@ -162,28 +162,32 @@ def fetching_youtubeid(youtubeid):
 @st.cache_data(show_spinner="Fetching data from Youtube...")
 def fetching_transcript(youtubeid,chunk_size,chunk_overlap):
     youtubeid = fetching_youtubeid(youtubeid)
-
-    transcript = YouTubeTranscriptApi.get_transcript(youtubeid, languages=['pt', 'en'])
     
-    formatter = TextFormatter()
-    text = formatter.format_transcript(transcript)
+    try:
+        transcript = YouTubeTranscriptApi.get_transcript(youtubeid, languages=['pt', 'en'])
+        
+        formatter = TextFormatter()
+        text = formatter.format_transcript(transcript)
 
-    # Split the text into chunks
-    text_splitter = CharacterTextSplitter(
-        separator="\n", chunk_size=chunk_size, chunk_overlap=chunk_overlap, length_function=len
-    )
-    chunks = text_splitter.split_text(text)
-    #embeddings = SentenceTransformerEmbeddings(model_name='hku-nlp/instructor-large')
-    embeddings = SentenceTransformerEmbeddings(model_name="flax-sentence-embeddings/all_datasets_v4_MiniLM-L6")
+        # Split the text into chunks
+        text_splitter = CharacterTextSplitter(
+            separator="\n", chunk_size=chunk_size, chunk_overlap=chunk_overlap, length_function=len
+        )
+        chunks = text_splitter.split_text(text)
+        #embeddings = SentenceTransformerEmbeddings(model_name='hku-nlp/instructor-large')
+        embeddings = SentenceTransformerEmbeddings(model_name="flax-sentence-embeddings/all_datasets_v4_MiniLM-L6")
 
-    # Create in-memory Qdrant instance
-    knowledge_base = Qdrant.from_texts(
-        chunks,
-        embeddings,
-        location=":memory:",
-        collection_name="doc_chunks",
-    )
-    return knowledge_base
+        # Create in-memory Qdrant instance
+        knowledge_base = Qdrant.from_texts(
+            chunks,
+            embeddings,
+            location=":memory:",
+            collection_name="doc_chunks",
+        )
+        return knowledge_base
+    except:
+        st.warning("Unable to get transcript from this video")
+        return False
 
 #-------------------------------------------------------------------
 @timeit
@@ -304,26 +308,27 @@ def main():
         
     if youtubeid:
         knowledge_base = fetching_transcript(youtubeid,chunk_size,chunk_overlap)
-        user_question = st.text_input("Ask a question about the Youtube video. You can use [] to narrow the dataset search.")
-        
-        promptoption = st.selectbox(
-                        '...or select a prompt templates',
-                        ("🇺🇸 Summarize the video", "🇧🇷 Faça um resumo do video em português"),index=None,
-                        placeholder="Select a prompt template...")
-        
-        if promptoption:
-            user_question = promptoption
+        if knowledge_base is not False:
+            user_question = st.text_input("Ask a question about the Youtube video. You can use [] to narrow the dataset search.")
             
-        if user_question:
-            response = prompting_llm("This is a video transcript, based on this text " + user_question.strip(),knowledge_base,chain,k_value,llm_used).replace("\n","  \n")
-            st.write("Prompt: _"+user_question.strip()+"_")
-            st.write(response)
-            if chunk_display:
-                chunk_display_result = chunk_search(user_question.strip(),knowledge_base,k_value)
-                st.divider()
-                with st.expander("Chunk results"):
-                    chunk_display_result = '  \n'.join(l for line in chunk_display_result.splitlines() for l in textwrap.wrap(line, width=120))
-                    st.code(chunk_display_result)
+            promptoption = st.selectbox(
+                            '...or select a prompt templates',
+                            ("🇺🇸 Summarize the video", "🇧🇷 Faça um resumo do video em português"),index=None,
+                            placeholder="Select a prompt template...")
+            
+            if promptoption:
+                user_question = promptoption
+                
+            if user_question:
+                response = prompting_llm("This is a video transcript, based on this text " + user_question.strip(),knowledge_base,chain,k_value,llm_used).replace("\n","  \n")
+                st.write("Prompt: _"+user_question.strip()+"_")
+                st.write(response)
+                if chunk_display:
+                    chunk_display_result = chunk_search(user_question.strip(),knowledge_base,k_value)
+                    st.divider()
+                    with st.expander("Chunk results"):
+                        chunk_display_result = '  \n'.join(l for line in chunk_display_result.splitlines() for l in textwrap.wrap(line, width=120))
+                        st.code(chunk_display_result)
 #-------------------------------------------------------------------
 
 if __name__ == "__main__":
