@@ -108,7 +108,7 @@ class webuiLLM(LLM):
                 "add_bos_token": "true",
                 "ban_eos_token": "false",
                 "skip_special_tokens": "false",
-                "stop": ["Human: "],
+                "stop": ["Human: ","<|eot_id|>", "Note:"], 
             }
         )
 
