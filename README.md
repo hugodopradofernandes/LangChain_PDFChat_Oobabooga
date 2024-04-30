@@ -15,7 +15,7 @@ Items added from forked repo, which I used as a starting point to learning how t
 - Added a chat page, with history and context, using _ConversationSummaryMemory_.
 - Many UI improvements, pratically a new app.
 
-- Works great with WizardLM-2-7B LLM model (tested using Q5_K_M quant)
+Works great with WizardLM-2-7B LLM model (tested using Q5_K_M quant)
 
 ![screenshot](https://github.com/hugodopradofernandes/LangChain_Wrapper_LocalLLM/blob/main/screenshots/Screenshot_20240419_175425.png)
 ![screenshot](https://github.com/hugodopradofernandes/Local-LLM-LangChain-Wrapper/blob/main/screenshots/Screenshot_20240419_174526.png)
