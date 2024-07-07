@@ -183,8 +183,17 @@ def commands(prompt,last_prompt,last_response,llm_used,chain):
             headers = {'Accept': 'application/json'}
             r = requests.get('http://127.0.0.1:5000/v1/internal/model/list', headers=headers)
             r.raise_for_status()
-            return "Model list:  \n" + """{}""".format("  \n".join(r.json()["model_names"][0:]))
+            #return "Model list:  \n" + """{}""".format("  \n".join(r.json()["data"][0:].keys()))
             
+            if r.status_code == 200:
+            # Parse the JSON response
+                data = r.json()
+                # Extract IDs
+                ids = [item['id'] for item in data['data']]
+                return "Model list:  \n" + """{}""".format("  \n".join(str(element) for element in ids))
+            else:
+                return(f"Failed to fetch data. Status code: {r.status_code}")
+
         case "/model":
             headers = {'Accept': 'application/json'}
             r = requests.get('http://127.0.0.1:5000/v1/internal/model/info', headers=headers)
@@ -194,7 +203,11 @@ def commands(prompt,last_prompt,last_response,llm_used,chain):
         case s if s.startswith('/load'):
             model = prompt.split(" ")[1]
             headers = {'Accept': 'application/json'}
-            if model in requests.get('http://127.0.0.1:5000/v1/internal/model/list', headers=headers).json()["model_names"][0:]:
+            #Check model list
+            model_list_r = requests.get('http://127.0.0.1:5000/v1/internal/model/list', headers=headers)
+            data = model_list_r.json()
+            ids = [item['id'] for item in data['data']]
+            if model in ids:
                 r = requests.post('http://127.0.0.1:5000/v1/internal/model/load', headers=headers, json={"model_name": model})
                 r.raise_for_status()
                 if r.status_code == 200:
