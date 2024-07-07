@@ -19,7 +19,7 @@ try:
     from langchain.chains.question_answering import load_qa_chain
     from langchain.llms.base import LLM
     from langchain.text_splitter import CharacterTextSplitter
-    from langchain_community.embeddings import HuggingFaceEmbeddings as SentenceTransformerEmbeddings
+    from langchain_huggingface import HuggingFaceEmbeddings as SentenceTransformerEmbeddings
     from langchain_community.vectorstores import Qdrant
     from langchain_openai import OpenAI
 
