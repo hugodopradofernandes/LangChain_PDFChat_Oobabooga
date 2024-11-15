@@ -301,7 +301,7 @@ def main():
     userinputquery = st.text_input('Add the desired Wikipedia topic here, or a URL')
 
     with st.expander("Advanced options"):
-        k_value = st.slider('Top K search | default = 6', 2, 10, 6)
+        k_value = st.slider('Top K search | default = 6', 2, 30, 6)
         chunk_size = st.slider('Chunk size | default = 1000 [Rebuilds the Vector store]', 500, 1500, 1000, step = 20)
         chunk_overlap = st.slider('Chunk overlap | default = 20 [Rebuilds the Vector store]', 0, 400, 200, step = 20)
         chunk_display = st.checkbox("Display chunk results")

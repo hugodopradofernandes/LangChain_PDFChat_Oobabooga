@@ -255,7 +255,7 @@ def commands(prompt,last_prompt,last_response,knowledge_base,chain,k_value,llm_u
     match prompt.split(" ")[0]:
         case "/continue":
             prompt = "Given this question: " + last_prompt.strip() + ", continue the following text you already started: " + last_response.rsplit("\n\n", 3)[0]
-            response = prompting_llm(prompt,knowledge_base,chain,k_value,document_bug,llm_used).replace("\n","  \n")
+            response = prompting_llm(prompt,knowledge_base,chain,k_value,llm_used).replace("\n","  \n")
             return response
         
         case "/model":
@@ -269,7 +269,7 @@ def commands(prompt,last_prompt,last_response,knowledge_base,chain,k_value,llm_u
 
         case "/repeat":
             prompt = "This is a document for reference, based on this text " + last_prompt.strip() + ":"
-            response = prompting_llm(prompt,knowledge_base,chain,k_value,document_bug,llm_used).replace("\n","  \n")
+            response = prompting_llm(prompt,knowledge_base,chain,k_value,llm_used).replace("\n","  \n")
             return response
         
         case "/stop":
@@ -324,7 +324,7 @@ def main():
     pdf = st.file_uploader("Upload PDF file(s)", type=["pdf"], accept_multiple_files=True)
 
     with st.expander("Advanced options"):
-        k_value = st.slider('Top K search | default = 6', 2, 10, 6)
+        k_value = st.slider('Top K search | default = 6', 2, 30, 6)
         chunk_size = st.slider('Chunk size | default = 1000 [Rebuilds the Vector store]', 500, 1500, 1000, step = 20)
         chunk_overlap = st.slider('Chunk overlap | default = 20 [Rebuilds the Vector store]', 0, 400, 200, step = 20)
         chunk_display = st.checkbox("Display chunk results")
